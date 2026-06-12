@@ -6,7 +6,9 @@
     Width="750"
     Height="600"
     Loaded="Window_Loaded"
-    WindowStartupLocation="CenterScreen">
+    WindowStartupLocation="CenterScreen"
+    Background="{StaticResource VSCode.Brushes.Editor.Background}"
+    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
@@ -23,8 +25,10 @@
             Grid.Row="0"
             Margin="0,0,0,15"
             Padding="10"
-            Background="#F0F0F0"
-            CornerRadius="5">
+            Background="{StaticResource VSCode.Brushes.Sidebar.Background}"
+            BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
+            BorderThickness="1"
+            CornerRadius="4">
             <StackPanel Orientation="Horizontal">
                 <TextBlock
                     Margin="0,0,10,0"
@@ -36,17 +40,18 @@
                     Width="200"
                     Margin="0,0,10,0"
                     IsEditable="True"
+                    Style="{StaticResource VSCode.Styles.ComboBox}"
                     SelectionChanged="CmbPresets_SelectionChanged" />
                 <Button
                     Width="120"
                     Margin="0,0,10,0"
-                    Background="#E1E1E1"
                     Click="BtnSavePreset_Click"
+                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
                     Content="💾 현재 설정 저장" />
                 <Button
                     Width="80"
-                    Background="#FFDCDC"
                     Click="BtnDeletePreset_Click"
+                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
                     Content="🗑️ 삭제" />
             </StackPanel>
         </Border>
@@ -64,12 +69,13 @@
                 <TextBox
                     x:Name="TxtSourcePath"
                     Height="25"
-                    Padding="5,0"
+                    Style="{StaticResource VSCode.Styles.TextBox}"
                     VerticalContentAlignment="Center" />
                 <Button
                     Grid.Column="1"
                     Margin="5,0,0,0"
                     Click="BtnBrowseSource_Click"
+                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
                     Content="찾기..." />
             </Grid>
         </StackPanel>
@@ -83,7 +89,7 @@
             <TextBox
                 x:Name="TxtTaskIntent"
                 Height="60"
-                Padding="5"
+                Style="{StaticResource VSCode.Styles.TextBox}"
                 AcceptsReturn="True"
                 TextWrapping="Wrap"
                 VerticalScrollBarVisibility="Auto"
@@ -104,7 +110,7 @@
                 <TextBox
                     x:Name="TxtExtensions"
                     Height="25"
-                    Padding="5,0"
+                    Style="{StaticResource VSCode.Styles.TextBox}"
                     VerticalContentAlignment="Center"
                     Text=".cs, .xaml, .cpp, .h" />
             </StackPanel>
@@ -116,7 +122,7 @@
                 <TextBox
                     x:Name="TxtExcludedFolders"
                     Height="25"
-                    Padding="5,0"
+                    Style="{StaticResource VSCode.Styles.TextBox}"
                     VerticalContentAlignment="Center"
                     Text="bin, obj, .git, .vs" />
             </StackPanel>
@@ -137,15 +143,16 @@
                     VerticalAlignment="Center"
                     Content="선택한 파일만 공유"
                     FontWeight="Bold"
-                    IsChecked="True" />
+                    IsChecked="True"
+                    Style="{StaticResource VSCode.Styles.CheckBox}" />
 
                 <Button
                     x:Name="BtnSelectFiles"
                     Width="100"
                     Height="40"
                     Margin="0,0,15,0"
-                    Background="#E1E1E1"
                     Click="BtnSelectFiles_Click"
+                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
                     Content="📂 파일 선택..."
                     FontWeight="Bold" />
             </StackPanel>
@@ -155,8 +162,8 @@
                     x:Name="BtnToggleServer"
                     Width="180"
                     Height="40"
-                    Background="#28A745"
                     Click="BtnToggleServer_Click"
+                    Style="{StaticResource VSCode.Styles.Button.Accent}"
                     Content="▶️ 서버 시작"
                     FontSize="14"
                     FontWeight="Bold"
@@ -170,7 +177,7 @@
                 VerticalAlignment="Center"
                 FontSize="12"
                 FontWeight="Bold"
-                Foreground="#005A9E"
+                Foreground="{StaticResource VSCode.Brushes.Text.Muted}"
                 Text="서버 중지됨"
                 TextWrapping="Wrap" />
         </Grid>
@@ -184,9 +191,11 @@
             x:Name="TxtLog"
             Grid.Row="6"
             Padding="10"
-            Background="#1E1E1E"
+            Background="{StaticResource VSCode.Brushes.Control.InputBackground}"
+            BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
+            Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
+            BorderThickness="1"
             FontFamily="Consolas"
-            Foreground="#D4D4D4"
             IsReadOnly="True"
             TextWrapping="Wrap"
             VerticalScrollBarVisibility="Auto" />

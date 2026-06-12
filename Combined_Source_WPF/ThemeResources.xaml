@@ -1,0 +1,332 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ========================================== -->
+    <!-- VS Code Dark Palette (HEX Colors)          -->
+    <!-- ========================================== -->
+    <Color x:Key="VSCode.Colors.Editor.Background">#1E1E1E</Color>
+    <Color x:Key="VSCode.Colors.Editor.Foreground">#D4D4D4</Color>
+    <Color x:Key="VSCode.Colors.Sidebar.Background">#252526</Color>
+    <Color x:Key="VSCode.Colors.Sidebar.Border">#2D2D2D</Color>
+    
+    <Color x:Key="VSCode.Colors.Accent.Blue">#007ACC</Color>
+    <Color x:Key="VSCode.Colors.Accent.BlueHover">#1C97EA</Color>
+    <Color x:Key="VSCode.Colors.Accent.BluePressed">#0062A3</Color>
+
+    <!-- Controls Config -->
+    <Color x:Key="VSCode.Colors.Control.Background">#3C3C3C</Color>
+    <Color x:Key="VSCode.Colors.Control.Border">#555555</Color>
+    <Color x:Key="VSCode.Colors.Control.HoverBorder">#007ACC</Color>
+    <Color x:Key="VSCode.Colors.Control.InputBackground">#2D2D2D</Color>
+    
+    <!-- Secondary Colors -->
+    <Color x:Key="VSCode.Colors.Button.SecondaryBackground">#3A3D41</Color>
+    <Color x:Key="VSCode.Colors.Button.SecondaryHover">#4E5257</Color>
+    
+    <!-- Text Colors -->
+    <Color x:Key="VSCode.Colors.Text.Muted">#858585</Color>
+    <Color x:Key="VSCode.Colors.Text.Disabled">#555555</Color>
+
+    <!-- ========================================== -->
+    <!-- SolidColorBrushes                          -->
+    <!-- ========================================== -->
+    <SolidColorBrush x:Key="VSCode.Brushes.Editor.Background" Color="{StaticResource VSCode.Colors.Editor.Background}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Editor.Foreground" Color="{StaticResource VSCode.Colors.Editor.Foreground}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Sidebar.Background" Color="{StaticResource VSCode.Colors.Sidebar.Background}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Sidebar.Border" Color="{StaticResource VSCode.Colors.Sidebar.Border}" />
+    
+    <SolidColorBrush x:Key="VSCode.Brushes.Accent.Blue" Color="{StaticResource VSCode.Colors.Accent.Blue}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Accent.BlueHover" Color="{StaticResource VSCode.Colors.Accent.BlueHover}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Accent.BluePressed" Color="{StaticResource VSCode.Colors.Accent.BluePressed}" />
+
+    <SolidColorBrush x:Key="VSCode.Brushes.Control.Background" Color="{StaticResource VSCode.Colors.Control.Background}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Control.Border" Color="{StaticResource VSCode.Colors.Control.Border}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Control.HoverBorder" Color="{StaticResource VSCode.Colors.Control.HoverBorder}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Control.InputBackground" Color="{StaticResource VSCode.Colors.Control.InputBackground}" />
+
+    <SolidColorBrush x:Key="VSCode.Brushes.Button.SecondaryBackground" Color="{StaticResource VSCode.Colors.Button.SecondaryBackground}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Button.SecondaryHover" Color="{StaticResource VSCode.Colors.Button.SecondaryHover}" />
+    
+    <SolidColorBrush x:Key="VSCode.Brushes.Text.Muted" Color="{StaticResource VSCode.Colors.Text.Muted}" />
+    <SolidColorBrush x:Key="VSCode.Brushes.Text.Disabled" Color="{StaticResource VSCode.Colors.Text.Disabled}" />
+
+    <!-- ========================================== -->
+    <!-- WPF Control Styles                         -->
+    <!-- ========================================== -->
+
+    <!-- Primary Accent Button Style -->
+    <Style x:Key="VSCode.Styles.Button.Accent" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="BorderBrush" Value="#3c3c3c" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center" 
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource VSCode.Brushes.Accent.BlueHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource VSCode.Brushes.Accent.BluePressed}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Background" Value="#252526" />
+                            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Text.Disabled}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Secondary Gray Button Style -->
+    <Style x:Key="VSCode.Styles.Button.Secondary" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Button.SecondaryBackground}" />
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center" 
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource VSCode.Brushes.Button.SecondaryHover}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="#2A2C2E" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Background" Value="#222222" />
+                            <Setter Property="BorderBrush" Value="#2B2B2B" />
+                            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Text.Disabled}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Flat TextBox Style -->
+    <Style x:Key="VSCode.Styles.TextBox" TargetType="TextBox">
+        <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Control.InputBackground}" />
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="5,3" />
+        <Setter Property="CaretBrush" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" 
+                                      Focusable="False" 
+                                      HorizontalScrollBarVisibility="Hidden" 
+                                      VerticalScrollBarVisibility="Hidden"
+                                      Margin="2" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="#858585" />
+                        </Trigger>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.HoverBorder}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Background" Value="#222222" />
+                            <Setter TargetName="Border" Property="BorderBrush" Value="#2D2D2D" />
+                            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Text.Disabled}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Custom CheckBox Style -->
+    <Style x:Key="VSCode.Styles.CheckBox" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Background="Transparent">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Border x:Name="chkBorder" 
+                                Width="16" 
+                                Height="16"
+                                Background="{StaticResource VSCode.Brushes.Control.InputBackground}" 
+                                BorderBrush="{StaticResource VSCode.Brushes.Control.Border}" 
+                                BorderThickness="1" 
+                                CornerRadius="2"
+                                SnapsToDevicePixels="True"
+                                VerticalAlignment="Center">
+                            <Path x:Name="chkCheckMark" 
+                                  Width="10" 
+                                  Height="10" 
+                                  SnapsToDevicePixels="True"
+                                  Stretch="Uniform" 
+                                  Fill="#FFFFFF" 
+                                  Data="M 3 6 L 5 8 L 9 2 M 3 6 L 5 8 L 9 2"
+                                  Stroke="#FFFFFF" 
+                                  StrokeThickness="1.5" 
+                                  Visibility="Collapsed" />
+                        </Border>
+                        
+                        <ContentPresenter Grid.Column="1" 
+                                          Margin="8,0,0,0" 
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True" 
+                                          SnapsToDevicePixels="True"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="chkCheckMark" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="chkBorder" Property="Background" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+                            <Setter TargetName="chkBorder" Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="chkBorder" Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.HoverBorder}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="chkBorder" Property="Background" Value="#222222" />
+                            <Setter TargetName="chkBorder" Property="BorderBrush" Value="#2B2B2B" />
+                            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Text.Disabled}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Custom ToggleButton Style (for FileSelectionWindow) -->
+    <Style x:Key="VSCode.Styles.ToggleButton" TargetType="ToggleButton">
+        <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Button.SecondaryBackground}" />
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center" 
+                                          Margin="{TemplateBinding Padding}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource VSCode.Brushes.Button.SecondaryHover}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+                            <Setter Property="Foreground" Value="#FFFFFF" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Background" Value="#222222" />
+                            <Setter TargetName="Border" Property="BorderBrush" Value="#2B2B2B" />
+                            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Text.Disabled}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Flat ComboBox Style (for Presets Selection) -->
+    <Style x:Key="VSCode.Styles.ComboBox" TargetType="ComboBox">
+        <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Control.InputBackground}" />
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="5,3" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Flat ListBox & Item Style (for file selection list) -->
+    <Style x:Key="VSCode.Styles.ListBox" TargetType="ListBox">
+        <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Control.InputBackground}" />
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+
+    <Style TargetType="ListBoxItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Name="ItemBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderThickness="0"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="#2A2D2E" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="#04395E" />
+                            <Setter Property="Foreground" Value="#FFFFFF" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

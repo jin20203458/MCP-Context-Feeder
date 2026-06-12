@@ -5,7 +5,9 @@
     Title="AI 에이전트 코드 변경 제안 승인"
     Width="750"
     Height="600"
-    WindowStartupLocation="CenterOwner">
+    WindowStartupLocation="CenterOwner"
+    Background="{StaticResource VSCode.Brushes.Editor.Background}"
+    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
@@ -21,7 +23,7 @@
             <TextBlock
                 FontSize="16"
                 FontWeight="Bold"
-                Foreground="#0078D7"
+                Foreground="{StaticResource VSCode.Brushes.Accent.Blue}"
                 Text="📋 AI 에이전트가 코드를 수정하려고 제안했습니다." />
             <Grid Margin="0,5,0,0">
                 <Grid.ColumnDefinitions>
@@ -35,7 +37,7 @@
                 <TextBlock
                     x:Name="TxtFilePath"
                     Grid.Column="1"
-                    Foreground="#555555"
+                    Foreground="{StaticResource VSCode.Brushes.Text.Muted}"
                     Text="C:/path/to/file.cs"
                     TextWrapping="Wrap" />
             </Grid>
@@ -49,13 +51,13 @@
             <Border
                 Margin="0,5,0,0"
                 Padding="8"
-                Background="#F9F9F9"
-                BorderBrush="#E2E2E2"
+                Background="{StaticResource VSCode.Brushes.Sidebar.Background}"
+                BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
                 BorderThickness="1"
                 CornerRadius="4">
                 <TextBlock
                     x:Name="TxtDescription"
-                    Foreground="#333333"
+                    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
                     Text="이 코드의 변경 사항에 대한 설명이 여기에 표시됩니다."
                     TextWrapping="Wrap" />
             </Border>
@@ -74,8 +76,8 @@
                 Text="제안된 코드 본문 (Proposed Code):" />
             <Border
                 Grid.Row="1"
-                Background="#1E1E1E"
-                BorderBrush="#CCCCCC"
+                Background="{StaticResource VSCode.Brushes.Control.InputBackground}"
+                BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
                 BorderThickness="1"
                 CornerRadius="4">
                 <TextBox
@@ -86,7 +88,7 @@
                     BorderThickness="0"
                     FontFamily="Consolas"
                     FontSize="12"
-                    Foreground="#D4D4D4"
+                    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
                     IsReadOnly="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -105,7 +107,9 @@
                 Margin="0,5,0,0"
                 Padding="5"
                 AcceptsReturn="True"
-                BorderBrush="#CCCCCC"
+                Background="{StaticResource VSCode.Brushes.Control.InputBackground}"
+                BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
+                Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
                 BorderThickness="1"
                 TextWrapping="Wrap"
                 VerticalScrollBarVisibility="Auto" />
@@ -124,7 +128,7 @@
                 Grid.Column="0"
                 VerticalAlignment="Center"
                 FontSize="11"
-                Foreground="#888888"
+                Foreground="{StaticResource VSCode.Brushes.Text.Muted}"
                 Text="* 승인하면 파일에 반영되고, 반려하면 피드백이 AI에게 전달됩니다." />
 
             <Button
@@ -132,22 +136,20 @@
                 Grid.Column="1"
                 Width="120"
                 Height="36"
-                Background="#DC3545"
                 Click="BtnReject_Click"
+                Style="{StaticResource VSCode.Styles.Button.Secondary}"
                 Content="❌ 반려 (Reject)"
-                FontWeight="Bold"
-                Foreground="White" />
+                FontWeight="Bold" />
 
             <Button
                 x:Name="BtnApprove"
                 Grid.Column="3"
                 Width="150"
                 Height="36"
-                Background="#28A745"
                 Click="BtnApprove_Click"
+                Style="{StaticResource VSCode.Styles.Button.Accent}"
                 Content="✅ 승인 (Approve)"
-                FontWeight="Bold"
-                Foreground="White" />
+                FontWeight="Bold" />
         </Grid>
     </Grid>
 </Window>

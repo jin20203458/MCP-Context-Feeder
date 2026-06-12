@@ -1,11 +1,13 @@
-﻿<Window
+<Window
     x:Class="CodeMergerUI.FileSelectionWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="병합할 파일 선택"
     Width="850"
     Height="650"
-    WindowStartupLocation="CenterOwner">
+    WindowStartupLocation="CenterOwner"
+    Background="{StaticResource VSCode.Brushes.Editor.Background}"
+    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -19,7 +21,7 @@
         <TextBlock
             Margin="0,0,0,10"
             FontWeight="Bold"
-            Text="필터링된 파일 목록입니다. 병합에 포함할 파일만 체크해주세요:" />
+            Text="필터링된 파일 목록입니다. 에이전트와 공유할 파일만 체크해주세요:" />
 
         <!--  검색창 UI 영역  -->
         <Grid Grid.Row="1" Margin="0,0,0,10">
@@ -36,7 +38,7 @@
                 x:Name="TxtSearch"
                 Grid.Column="1"
                 Height="25"
-                Padding="5,0"
+                Style="{StaticResource VSCode.Styles.TextBox}"
                 VerticalContentAlignment="Center"
                 TextChanged="TxtSearch_TextChanged" />
         </Grid>
@@ -51,6 +53,7 @@
                 x:Name="ChkSelectAll"
                 VerticalAlignment="Center"
                 Click="ChkSelectAll_Click"
+                Style="{StaticResource VSCode.Styles.CheckBox}"
                 Content="전체 선택 (현재 보이는 목록)"
                 FontWeight="Bold" />
 
@@ -61,21 +64,21 @@
                 Width="130"
                 Height="25"
                 Click="TglShowSelectedOnly_Click"
+                Style="{StaticResource VSCode.Styles.ToggleButton}"
                 Content="선택한 파일만 보기" />
         </Grid>
 
         <ListBox
             x:Name="LstFiles"
             Grid.Row="3"
-            Padding="5"
-            BorderBrush="#CCCCCC"
-            BorderThickness="1">
+            Style="{StaticResource VSCode.Styles.ListBox}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <CheckBox
                         Margin="0,3"
                         Content="{Binding FilePath}"
                         FontSize="13"
+                        Style="{StaticResource VSCode.Styles.CheckBox}"
                         IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
                 </DataTemplate>
             </ListBox.ItemTemplate>
@@ -87,19 +90,20 @@
             HorizontalAlignment="Right"
             Orientation="Horizontal">
             <Button
+                x:Name="BtnOk"
                 Width="100"
                 Height="35"
                 Margin="0,0,10,0"
-                Background="#0078D7"
                 Click="BtnOk_Click"
+                Style="{StaticResource VSCode.Styles.Button.Accent}"
                 Content="선택 완료"
-                FontWeight="Bold"
-                Foreground="White" />
+                FontWeight="Bold" />
             <Button
+                x:Name="BtnCancel"
                 Width="80"
                 Height="35"
-                Background="#E1E1E1"
                 Click="BtnCancel_Click"
+                Style="{StaticResource VSCode.Styles.Button.Secondary}"
                 Content="취소" />
         </StackPanel>
     </Grid>

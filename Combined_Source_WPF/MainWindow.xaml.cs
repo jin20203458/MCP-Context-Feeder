@@ -261,9 +261,9 @@ namespace CodeMergerUI
                 _server.Start();
 
                 BtnToggleServer.Content = "⏹️ 서버 중지";
-                BtnToggleServer.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(220, 53, 69)); // Red #DC3545
+                BtnToggleServer.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(163, 21, 21)); // Dark Red #A31515
                 TxtServerAddress.Text = $"서버 동작 중: http://127.0.0.1:{_server.Port}/sse";
-                TxtServerAddress.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(40, 167, 69)); // Green #28A745
+                TxtServerAddress.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(78, 172, 114)); // Muted Green #4EAC72
             }
             catch (Exception ex)
             {
@@ -282,9 +282,9 @@ namespace CodeMergerUI
             }
 
             BtnToggleServer.Content = "▶️ 서버 시작";
-            BtnToggleServer.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(40, 167, 69)); // Green #28A745
+            BtnToggleServer.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(14, 112, 192)); // VSCode Active Blue #0E70C0
             TxtServerAddress.Text = "서버 중지됨";
-            TxtServerAddress.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 90, 158)); // Blue
+            TxtServerAddress.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(133, 133, 133)); // Muted Gray #858585
         }
 
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
