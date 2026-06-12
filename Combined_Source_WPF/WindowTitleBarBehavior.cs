@@ -44,8 +44,8 @@ namespace CodeMergerUI
                     int useImmersiveDarkMode = 1;
                     DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useImmersiveDarkMode, sizeof(int));
 
-                    // 2. Set title bar color to sidebar background `#151820` -> BGR: 0x00201815
-                    int darkColorValue = 0x00201815;
+                    // 2. Set title bar color to sidebar background `#141414` -> BGR: 0x00141414
+                    int darkColorValue = 0x00141414;
                     DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, ref darkColorValue, sizeof(int));
                 }
             }
