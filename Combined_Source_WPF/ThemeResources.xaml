@@ -328,7 +328,7 @@
                     <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="0" MinWidth="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+                            <ColumnDefinition Width="Auto" MinWidth="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
                         </Grid.ColumnDefinitions>
                         <Popup x:Name="PART_Popup"
                                Grid.ColumnSpan="2"
@@ -362,6 +362,8 @@
                                 </ScrollViewer>
                             </Border>
                         </Popup>
+                        
+                        <!-- ToggleButton (Draws Background and Arrow) -->
                         <ToggleButton x:Name="toggleButton"
                                      Grid.ColumnSpan="2"
                                      Background="{TemplateBinding Background}"
@@ -383,16 +385,9 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <ContentPresenter x:Name="ContentSite"
-                                                              Margin="{TemplateBinding Padding}"
-                                                              HorizontalAlignment="Left"
-                                                              VerticalAlignment="Center"
-                                                              Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                              ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                             <Path x:Name="arrow"
                                                   Grid.Column="1"
-                                                  Margin="0,0,8,0"
+                                                  Margin="0,0,10,0"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
                                                   Data="M 0 0 L 4 4 L 8 0 Z"
@@ -407,13 +402,44 @@
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
+
+                        <!-- Non-Editable Content Area -->
+                        <ContentPresenter x:Name="contentPresenter"
+                                          Grid.Column="0"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource TemplatedParent}}"
+                                          IsHitTestVisible="false"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+
+                        <!-- Editable Text Area -->
+                        <TextBox x:Name="PART_EditableTextBox"
+                                 Grid.Column="0"
+                                 HorizontalAlignment="Stretch"
+                                 VerticalAlignment="Center"
+                                 Margin="{TemplateBinding Padding}"
+                                 Focusable="true"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}"
+                                 Visibility="Collapsed"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="{TemplateBinding Foreground}"
+                                 CaretBrush="{TemplateBinding Foreground}"/>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsEditable" Value="true">
+                            <Setter Property="IsTabStop" Value="false" />
+                            <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="contentPresenter" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="toggleButton" Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Control.HoverBorder}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="false">
-                            <Setter TargetName="templateRoot" Property="Opacity" Value="0.56" />
+                            <Setter TargetName="toggleButton" Property="Opacity" Value="0.56" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
