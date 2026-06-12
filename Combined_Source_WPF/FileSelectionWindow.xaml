@@ -2,10 +2,12 @@
     x:Class="CodeMergerUI.FileSelectionWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:CodeMergerUI"
     Title="병합할 파일 선택"
     Width="850"
     Height="650"
     WindowStartupLocation="CenterOwner"
+    local:WindowTitleBarBehavior.EnableDarkTitleBar="True"
     Background="{StaticResource VSCode.Brushes.Editor.Background}"
     Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
     <Grid Margin="15">
