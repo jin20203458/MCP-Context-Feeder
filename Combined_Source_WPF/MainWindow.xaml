@@ -9,7 +9,7 @@
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterScreen"
     local:WindowTitleBarBehavior.EnableDarkTitleBar="True"
-    Icon="app_icon.ico"
+    Icon="app_icon.png"
     Background="{StaticResource VSCode.Brushes.Editor.Background}"
     Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
 
