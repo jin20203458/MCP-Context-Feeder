@@ -10,7 +10,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="app_icon.ico" />
+    <Compile Remove="AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="app_icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="AssemblyInfo.cs" />
   </ItemGroup>
 
 </Project>
