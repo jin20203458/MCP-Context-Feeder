@@ -1,14 +1,15 @@
 <Window
-    x:Class="CodeMergerUI.CodeApprovalWindow"
+    x:Class="Combined_Source_WPF.Views.CodeApprovalWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="clr-namespace:CodeMergerUI"
+    xmlns:local="clr-namespace:Combined_Source_WPF.Views"
+    xmlns:helpers="clr-namespace:Combined_Source_WPF.Helpers"
     Title="AI 에이전트 코드 변경 제안 승인"
     Width="750"
     Height="600"
     WindowStartupLocation="CenterOwner"
-    local:WindowTitleBarBehavior.EnableDarkTitleBar="True"
-    Icon="app_icon.png"
+    helpers:WindowTitleBarBehavior.EnableDarkTitleBar="True"
+    Icon="/Resources/app_icon.png"
     Background="{StaticResource VSCode.Brushes.Editor.Background}"
     Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
 

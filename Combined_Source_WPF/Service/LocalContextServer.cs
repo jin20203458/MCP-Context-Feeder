@@ -10,7 +10,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Linq;
 
-namespace CodeMergerUI
+using Combined_Source_WPF.Views;
+
+namespace Combined_Source_WPF.Service
 {
     public class LocalContextServer
     {

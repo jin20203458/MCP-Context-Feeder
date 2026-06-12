@@ -9,7 +9,10 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.Win32;
 
-namespace CodeMergerUI
+using Combined_Source_WPF.Helpers;
+using Combined_Source_WPF.Service;
+
+namespace Combined_Source_WPF.Views
 {
     public partial class MainWindow : Window
     {

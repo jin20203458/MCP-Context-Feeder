@@ -1,7 +1,9 @@
 using System;
 using System.Windows;
 
-namespace CodeMergerUI
+using Combined_Source_WPF.Helpers;
+
+namespace Combined_Source_WPF.Views
 {
     public partial class CodeApprovalWindow : Window
     {

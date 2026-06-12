@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 
-namespace CodeMergerUI
+namespace Combined_Source_WPF.Helpers
 {
     public static class WindowTitleBarBehavior
     {

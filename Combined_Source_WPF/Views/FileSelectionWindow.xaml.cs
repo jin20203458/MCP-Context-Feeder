@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace CodeMergerUI
+using Combined_Source_WPF.Helpers;
+
+namespace Combined_Source_WPF.Views
 {
     // 체크박스 바인딩을 위한 데이터 모델
     public class SelectableFile
