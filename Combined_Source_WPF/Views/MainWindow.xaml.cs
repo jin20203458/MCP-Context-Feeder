@@ -18,10 +18,7 @@ namespace Combined_Source_WPF.Views
     {
         private readonly string presetFilePath = "presets.json";
         private List<MergePreset> presets = new List<MergePreset>();
-        private string lastMergedFilePath = string.Empty;
-
-        // 현재 선택된 파일 목록을 유지할 변수 추가
-        private List<string> currentSelectedFiles = new List<string>();
+        private List<ReferenceDocument> currentReferences = new List<ReferenceDocument>();
 
         // 로컬 HTTP 서버 관리 객체
         private LocalContextServer? _server;
@@ -30,6 +27,33 @@ namespace Combined_Source_WPF.Views
         {
             InitializeComponent();
             this.Closing += MainWindow_Closing;
+        }
+ 
+        // ==========================================
+        // Window Control Buttons (Custom Title Bar)
+        // ==========================================
+        private void BtnMinimize_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+ 
+        private void BtnMaximize_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+            {
+                this.WindowState = WindowState.Normal;
+                PathMaximize.Data = System.Windows.Media.Geometry.Parse("M 0 0 L 10 0 L 10 10 L 0 10 Z");
+            }
+            else
+            {
+                this.WindowState = WindowState.Maximized;
+                PathMaximize.Data = System.Windows.Media.Geometry.Parse("M 2 0 L 10 0 L 10 8 L 8 8 L 8 10 L 0 10 L 0 2 L 2 2 Z M 2 2 L 8 2 L 8 8 L 2 8 Z");
+            }
+        }
+ 
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
 
         // ==========================================
@@ -48,13 +72,67 @@ namespace Combined_Source_WPF.Views
                 if (File.Exists(presetFilePath))
                 {
                     string json = File.ReadAllText(presetFilePath);
-                    presets = JsonSerializer.Deserialize<List<MergePreset>>(json) ?? new List<MergePreset>();
+                    using (JsonDocument doc = JsonDocument.Parse(json))
+                    {
+                        presets.Clear();
+                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (JsonElement element in doc.RootElement.EnumerateArray())
+                            {
+                                var preset = new MergePreset();
+                                if (element.TryGetProperty("PresetName", out JsonElement nameProp))
+                                {
+                                    preset.PresetName = nameProp.GetString() ?? string.Empty;
+                                }
+
+                                // 새 포맷 확인 (ReferenceDocuments 필드가 있는지)
+                                if (element.TryGetProperty("ReferenceDocuments", out JsonElement refDocsProp) && refDocsProp.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (JsonElement docEl in refDocsProp.EnumerateArray())
+                                    {
+                                        string path = docEl.TryGetProperty("Path", out JsonElement p) ? p.GetString() ?? string.Empty : string.Empty;
+                                        string type = docEl.TryGetProperty("Type", out JsonElement t) ? t.GetString() ?? "File" : "File";
+                                        if (!string.IsNullOrEmpty(path))
+                                        {
+                                            preset.ReferenceDocuments.Add(new ReferenceDocument { Path = path, Type = type });
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // 옛 포맷 마이그레이션 (호환성 보장)
+                                    bool isSelective = element.TryGetProperty("IsSelectiveMerge", out JsonElement selProp) && selProp.GetBoolean();
+                                    if (isSelective && element.TryGetProperty("SelectedFiles", out JsonElement filesProp) && filesProp.ValueKind == JsonValueKind.Array)
+                                    {
+                                        foreach (JsonElement fileEl in filesProp.EnumerateArray())
+                                        {
+                                            string filePath = fileEl.GetString() ?? string.Empty;
+                                            if (!string.IsNullOrEmpty(filePath))
+                                            {
+                                                preset.ReferenceDocuments.Add(new ReferenceDocument { Path = filePath, Type = "File" });
+                                            }
+                                        }
+                                    }
+                                    else if (element.TryGetProperty("SourcePath", out JsonElement srcProp))
+                                    {
+                                        string srcPath = srcProp.GetString() ?? string.Empty;
+                                        if (!string.IsNullOrEmpty(srcPath))
+                                        {
+                                            preset.ReferenceDocuments.Add(new ReferenceDocument { Path = srcPath, Type = "Directory" });
+                                        }
+                                    }
+                                }
+                                presets.Add(preset);
+                            }
+                        }
+                    }
                     RefreshPresetComboBox();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"프리셋을 불러오는 중 오류가 발생했습니다.\n{ex.Message}");
+                presets = new List<MergePreset>();
             }
         }
 
@@ -70,13 +148,8 @@ namespace Combined_Source_WPF.Views
                 var preset = presets.FirstOrDefault(p => p.PresetName == selectedName);
                 if (preset != null)
                 {
-                    TxtSourcePath.Text = preset.SourcePath;
-                    TxtExtensions.Text = preset.Extensions;
-                    TxtExcludedFolders.Text = preset.ExcludedFolders;
-                    ChkSelectiveMerge.IsChecked = preset.IsSelectiveMerge;
-
-                    // 프리셋의 파일 선택 목록 동기화
-                    currentSelectedFiles = preset.SelectedFiles != null ? new List<string>(preset.SelectedFiles) : new List<string>();
+                    currentReferences = new List<ReferenceDocument>(preset.ReferenceDocuments);
+                    RefreshReferencesList();
                 }
             }
         }
@@ -93,28 +166,14 @@ namespace Combined_Source_WPF.Views
             var existing = presets.FirstOrDefault(p => p.PresetName == presetName);
             if (existing != null)
             {
-                existing.SourcePath = TxtSourcePath.Text;
-                existing.OutputPath = "";
-                existing.Extensions = TxtExtensions.Text;
-                existing.ExcludedFolders = TxtExcludedFolders.Text;
-                existing.IsSelectiveMerge = ChkSelectiveMerge.IsChecked == true;
-
-                // 선택 파일 갱신 추가
-                existing.SelectedFiles = currentSelectedFiles;
+                existing.ReferenceDocuments = new List<ReferenceDocument>(currentReferences);
             }
             else
             {
                 presets.Add(new MergePreset
                 {
                     PresetName = presetName,
-                    SourcePath = TxtSourcePath.Text,
-                    OutputPath = "",
-                    Extensions = TxtExtensions.Text,
-                    ExcludedFolders = TxtExcludedFolders.Text,
-                    IsSelectiveMerge = ChkSelectiveMerge.IsChecked == true,
-
-                    // 선택 파일 갱신 추가
-                    SelectedFiles = currentSelectedFiles
+                    ReferenceDocuments = new List<ReferenceDocument>(currentReferences)
                 });
             }
             SavePresetsToFile();
@@ -139,76 +198,217 @@ namespace Combined_Source_WPF.Views
 
         private void SavePresetsToFile()
         {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(presets, options);
-            File.WriteAllText(presetFilePath, json);
-        }
-
-        // ==========================================
-        // 2. 폴더 찾기 로직
-        // ==========================================
-        private void BtnBrowseSource_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFolderDialog { Title = "소스 코드가 들어있는 폴더를 선택하세요", InitialDirectory = TxtSourcePath.Text };
-            if (dialog.ShowDialog() == true) TxtSourcePath.Text = dialog.FolderName;
-        }
-
-        // ==========================================
-        // 3. 파일 병합 및 클립보드 복사 로직
-        // ==========================================
-
-        // 파일 필터링 공통 메서드 추가
-        private List<string> GetFilteredFiles(string sourceDir, string[] allowedExtensions, string[] excludedFolders)
-        {
-            return Directory.EnumerateFiles(sourceDir, "*.*", SearchOption.AllDirectories)
-                .Where(filePath =>
-                {
-                    string ext = Path.GetExtension(filePath).ToLower();
-                    bool hasValidExt = allowedExtensions.Contains(ext);
-                    bool isExcluded = excludedFolders.Any(ex => filePath.IndexOf($@"\{ex}\", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                                                filePath.IndexOf($@"/{ex}/", StringComparison.OrdinalIgnoreCase) >= 0);
-                    return hasValidExt && !isExcluded;
-                }).ToList();
-        }
-
-        // 새롭게 분리된 파일 선택 버튼 이벤트
-        private void BtnSelectFiles_Click(object sender, RoutedEventArgs e)
-        {
-            string sourceDir = TxtSourcePath.Text.Trim();
-            if (string.IsNullOrEmpty(sourceDir) || !Directory.Exists(sourceDir))
+            try
             {
-                MessageBox.Show("올바른 소스 폴더 경로를 먼저 설정해주세요.", "경로 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(presets, options);
+                File.WriteAllText(presetFilePath, json);
             }
-
-            string[] allowedExtensions = TxtExtensions.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(ext => ext.Trim().ToLower()).ToArray();
-            string[] excludedFolders = TxtExcludedFolders.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(folder => folder.Trim()).ToArray();
-
-            // 조건에 맞는 파일 검색
-            var allFilteredFiles = GetFilteredFiles(sourceDir, allowedExtensions, excludedFolders);
-
-            // 선택 창 열기
-            var selectionWindow = new FileSelectionWindow(allFilteredFiles, currentSelectedFiles);
-            selectionWindow.Owner = this;
-
-            if (selectionWindow.ShowDialog() == true)
+            catch (Exception ex)
             {
-                currentSelectedFiles = selectionWindow.FinalSelectedFiles;
+                LogMessage($"❌ 프리셋 저장 중 오류: {ex.Message}");
+            }
+        }
 
-                // 현재 선택된 프리셋이 있다면 프리셋에도 즉시 갱신 및 저장
-                var currentPreset = presets.FirstOrDefault(p => p.PresetName == CmbPresets.Text.Trim());
-                if (currentPreset != null)
+        // ==========================================
+        // 2. 참조 문서 및 폴더 관리 로직
+        // ==========================================
+        private void BtnAddFile_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "참조할 파일 선택",
+                Multiselect = true,
+                Filter = "모든 파일 (*.*)|*.*|소스 코드 (*.cs;*.xaml;*.js;*.ts;*.py;*.txt)|*.cs;*.xaml;*.js;*.ts;*.py;*.txt"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                foreach (string fileName in dialog.FileNames)
                 {
-                    currentPreset.SelectedFiles = currentSelectedFiles;
-                    SavePresetsToFile();
+                    if (!currentReferences.Any(r => r.Path.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        currentReferences.Add(new ReferenceDocument { Path = fileName, Type = "File" });
+                    }
                 }
-
-                MessageBox.Show($"{currentSelectedFiles.Count}개의 파일이 병합 대상으로 선택되었습니다.", "선택 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                RefreshReferencesList();
+                SaveCurrentPresetReferencesIfSelected();
             }
         }
 
+        private void BtnAddFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog
+            {
+                Title = "참조할 폴더 선택"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                string folderPath = dialog.FolderName;
+                if (!currentReferences.Any(r => r.Path.Equals(folderPath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    currentReferences.Add(new ReferenceDocument { Path = folderPath, Type = "Directory" });
+                }
+                RefreshReferencesList();
+                SaveCurrentPresetReferencesIfSelected();
+            }
+        }
+
+        private void BtnRemoveReference_Click(object sender, RoutedEventArgs e)
+        {
+            if (LstReferences.SelectedItems.Count > 0)
+            {
+                var selectedList = LstReferences.SelectedItems.Cast<ReferenceDocument>().ToList();
+                foreach (var selected in selectedList)
+                {
+                    currentReferences.Remove(selected);
+                }
+                RefreshReferencesList();
+                SaveCurrentPresetReferencesIfSelected();
+            }
+            else
+            {
+                MessageBox.Show("삭제할 참조 항목을 목록에서 선택하세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void SaveCurrentPresetReferencesIfSelected()
+        {
+            string presetName = CmbPresets.Text.Trim();
+            var currentPreset = presets.FirstOrDefault(p => p.PresetName == presetName);
+            if (currentPreset != null)
+            {
+                currentPreset.ReferenceDocuments = new List<ReferenceDocument>(currentReferences);
+                SavePresetsToFile();
+            }
+        }
+
+        private void RefreshReferencesList()
+        {
+            LstReferences.ItemsSource = null;
+            LstReferences.ItemsSource = currentReferences;
+            EstimateTokens();
+        }
+
+        // ==========================================
+        // 3. 토큰 예측기 (Token Estimator)
+        // ==========================================
+        private async void EstimateTokens()
+        {
+            TxtEstimatedTokens.Text = "Calculating...";
+            
+            var refsCopy = currentReferences.ToList();
+            
+            int totalChars = await Task.Run(() =>
+            {
+                int chars = 0;
+                var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var reference in refsCopy)
+                {
+                    if (reference.Type == "File")
+                    {
+                        if (File.Exists(reference.Path))
+                        {
+                            chars += GetCharCount(reference.Path, visited);
+                        }
+                    }
+                    else if (reference.Type == "Directory")
+                    {
+                        if (Directory.Exists(reference.Path))
+                        {
+                            try
+                            {
+                                var files = Directory.EnumerateFiles(reference.Path, "*.*", SearchOption.AllDirectories);
+                                foreach (var file in files)
+                                {
+                                    if (IsExcludedPath(file)) continue;
+                                    if (IsTextFile(file))
+                                    {
+                                        chars += GetCharCount(file, visited);
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                return chars;
+            });
+
+            double estTokens = Math.Ceiling(totalChars / 3.0);
+            TxtEstimatedTokens.Text = $"{estTokens:N0} tokens ({totalChars:N0} chars)";
+        }
+
+        private int GetCharCount(string filePath, HashSet<string> visited)
+        {
+            string fullPath = Path.GetFullPath(filePath);
+            if (visited.Contains(fullPath)) return 0;
+            visited.Add(fullPath);
+
+            try
+            {
+                var info = new FileInfo(fullPath);
+                if (info.Length > 1024 * 1024) return 0; // 1MB 제한
+                
+                string content = File.ReadAllText(fullPath, Encoding.UTF8);
+                return content.Length;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private bool IsExcludedPath(string filePath)
+        {
+            var parts = filePath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                var p = part.ToLower();
+                if (p == "bin" || p == "obj" || p == ".git" || p == ".vs" || p == "node_modules" || p == "dist" || p == "out")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsTextFile(string filePath)
+        {
+            try
+            {
+                var info = new FileInfo(filePath);
+                if (info.Length > 1024 * 1024) return false;
+
+                string ext = Path.GetExtension(filePath).ToLower();
+                string[] textExtensions = new[]
+                {
+                    ".cs", ".xaml", ".xml", ".json", ".txt", ".md", ".js", ".ts", ".html",
+                    ".css", ".py", ".java", ".cpp", ".h", ".c", ".go", ".rs", ".yaml", ".yml",
+                    ".ini", ".conf", ".sh", ".bat", ".ps1", ".sql", ".config", ".csproj", ".sln"
+                };
+                if (textExtensions.Contains(ext)) return true;
+
+                using (var stream = File.OpenRead(filePath))
+                {
+                    byte[] buffer = new byte[1024];
+                    int read = stream.Read(buffer, 0, buffer.Length);
+                    for (int i = 0; i < read; i++)
+                    {
+                        if (buffer[i] == 0) return false;
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // ==========================================
+        // 4. 서버 제어 및 로깅 로직
+        // ==========================================
         private void BtnToggleServer_Click(object sender, RoutedEventArgs e)
         {
             if (_server != null && _server.IsRunning)
@@ -233,28 +433,12 @@ namespace Combined_Source_WPF.Views
                         Dispatcher.Invoke(() => { intent = TxtTaskIntent.Text; });
                         return intent;
                     },
-                    getFiles: () => {
-                        List<string> files = new List<string>();
+                    getReferenceDocuments: () => {
+                        List<ReferenceDocument> docs = new List<ReferenceDocument>();
                         Dispatcher.Invoke(() => {
-                            bool isSelective = ChkSelectiveMerge.IsChecked == true;
-                            if (isSelective)
-                            {
-                                files = currentSelectedFiles.Where(f => File.Exists(f)).ToList();
-                            }
-                            else
-                            {
-                                string sourceDir = TxtSourcePath.Text.Trim();
-                                if (!string.IsNullOrEmpty(sourceDir) && Directory.Exists(sourceDir))
-                                {
-                                    string[] allowedExtensions = TxtExtensions.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                        .Select(ext => ext.Trim().ToLower()).ToArray();
-                                    string[] excludedFolders = TxtExcludedFolders.Text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                        .Select(folder => folder.Trim()).ToArray();
-                                    files = GetFilteredFiles(sourceDir, allowedExtensions, excludedFolders);
-                                }
-                            }
+                            docs = currentReferences.ToList();
                         });
-                        return files;
+                        return docs;
                     },
                     logAction: (msg) => {
                         LogMessage(msg);
@@ -302,21 +486,63 @@ namespace Combined_Source_WPF.Views
                 TxtLog.ScrollToEnd();
             });
         }
+
+        private void Window_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+            }
+        }
+
+        private void Window_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                bool added = false;
+                foreach (string path in files)
+                {
+                    if (File.Exists(path))
+                    {
+                        if (!currentReferences.Any(r => r.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            currentReferences.Add(new ReferenceDocument { Path = path, Type = "File" });
+                            added = true;
+                        }
+                    }
+                    else if (Directory.Exists(path))
+                    {
+                        if (!currentReferences.Any(r => r.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            currentReferences.Add(new ReferenceDocument { Path = path, Type = "Directory" });
+                            added = true;
+                        }
+                    }
+                }
+                if (added)
+                {
+                    RefreshReferencesList();
+                    SaveCurrentPresetReferencesIfSelected();
+                }
+            }
+        }
     }
 
     // ==========================================
-    // 4. 프리셋 데이터 모델 (수정됨)
+    // 5. 데이터 모델 정의
     // ==========================================
+    public class ReferenceDocument
+    {
+        public string Name => System.IO.Path.GetFileName(Path) is string n && !string.IsNullOrEmpty(n) ? n : Path;
+        public string Path { get; set; } = string.Empty;
+        public string Type { get; set; } = "File"; // "File" or "Directory"
+    }
+
     public class MergePreset
     {
-        public string PresetName { get; set; }
-        public string SourcePath { get; set; }
-        public string OutputPath { get; set; }
-        public string Extensions { get; set; }
-        public string ExcludedFolders { get; set; }
-
-        // 새로 추가된 프로퍼티
-        public bool IsSelectiveMerge { get; set; }
-        public List<string> SelectedFiles { get; set; } = new List<string>();
+        public string PresetName { get; set; } = string.Empty;
+        public List<ReferenceDocument> ReferenceDocuments { get; set; } = new List<ReferenceDocument>();
     }
 }

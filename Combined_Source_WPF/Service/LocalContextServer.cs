@@ -19,7 +19,7 @@ namespace Combined_Source_WPF.Service
         private TcpListener? _listener;
         private bool _isRunning;
         private readonly Func<string> _getTaskIntent;
-        private readonly Func<List<string>> _getFiles;
+        private readonly Func<List<ReferenceDocument>> _getReferenceDocuments;
         private readonly Action<string> _logAction;
 
         // SSE 클라이언트 연결을 추적하기 위한 컬렉션
@@ -29,10 +29,10 @@ namespace Combined_Source_WPF.Service
         public int Port { get; private set; }
         public bool IsRunning => _isRunning;
 
-        public LocalContextServer(Func<string> getTaskIntent, Func<List<string>> getFiles, Action<string> logAction)
+        public LocalContextServer(Func<string> getTaskIntent, Func<List<ReferenceDocument>> getReferenceDocuments, Action<string> logAction)
         {
             _getTaskIntent = getTaskIntent ?? throw new ArgumentNullException(nameof(getTaskIntent));
-            _getFiles = getFiles ?? throw new ArgumentNullException(nameof(getFiles));
+            _getReferenceDocuments = getReferenceDocuments ?? throw new ArgumentNullException(nameof(getReferenceDocuments));
             _logAction = logAction ?? throw new ArgumentNullException(nameof(logAction));
         }
 
@@ -195,8 +195,6 @@ namespace Combined_Source_WPF.Service
                     await stream.WriteAsync(headerBytes, 0, headerBytes.Length);
 
                     // MCP SSE 필수 엔드포인트 이벤트 통지
-                    // event: endpoint
-                    // data: /api/message?clientId=UUID
                     string endpointEvent = $"event: endpoint\r\ndata: /api/message?clientId={clientId}\r\n\r\n";
                     byte[] eventBytes = Encoding.UTF8.GetBytes(endpointEvent);
                     await stream.WriteAsync(eventBytes, 0, eventBytes.Length);
@@ -284,10 +282,9 @@ namespace Combined_Source_WPF.Service
                     // 일반 REST API 하위 호환 및 404 폴백
                     if (method == "GET" && path == "/api/context")
                     {
-                        // 기존 HTTP 직접 호출용도 남겨둠
                         string taskIntent = _getTaskIntent();
-                        List<string> files = _getFiles();
-                        var responseData = new { task = taskIntent, approvedFiles = files };
+                        List<ReferenceDocument> refs = _getReferenceDocuments();
+                        var responseData = new { task = taskIntent, approvedReferences = refs };
                         string jsonResponse = JsonSerializer.Serialize(responseData, new JsonSerializerOptions { WriteIndented = true });
                         byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonResponse);
                         string httpResponse = "HTTP/1.1 200 OK\r\n" +
@@ -358,7 +355,7 @@ namespace Combined_Source_WPF.Service
                                 },
                                 serverInfo = new
                                 {
-                                    name = "WPF-Context-Control-Center",
+                                    name = "WPF-Context-Feeder",
                                     version = "1.0.0"
                                 }
                             };
@@ -371,28 +368,12 @@ namespace Combined_Source_WPF.Service
                                 {
                                     new
                                     {
-                                        name = "get_workspace_context",
-                                        description = "WPF GUI에 지정되어 있는 오늘의 에이전트 작업 목표(Task)와 허가된 소스 파일 경로 리스트를 가져옵니다.",
+                                        name = "get_reference_context",
+                                        description = "WPF GUI에 지정되어 있는 오늘의 에이전트 작업 목표(Task)와 허가된 소스 파일들의 본문 텍스트 내용을 한 번에 가져옵니다.",
                                         inputSchema = new
                                         {
                                             type = "object",
                                             properties = new { }
-                                        }
-                                    },
-                                    new
-                                    {
-                                        name = "propose_code_change",
-                                        description = "수정한 코드(Proposed Code)를 WPF 화면에 팝업창으로 띄워, 사용자의 최종 검토 및 승인을 요청합니다. 승인될 경우에만 실제 로컬 디스크의 파일 시스템에 코드가 반영(쓰기)됩니다.",
-                                        inputSchema = new
-                                        {
-                                            type = "object",
-                                            properties = new
-                                            {
-                                                filePath = new { type = "string", description = "변경을 제안하는 로컬 소스 파일의 절대 경로" },
-                                                proposedCode = new { type = "string", description = "제안할 전체 소스 코드 본문" },
-                                                description = new { type = "string", description = "이번 수정 사항에 대한 세부 설명" }
-                                            },
-                                            required = new string[] { "filePath", "proposedCode" }
                                         }
                                     }
                                 }
@@ -425,18 +406,24 @@ namespace Combined_Source_WPF.Service
 
         private async Task<object> ExecuteToolCallAsync(string toolName, JsonElement arguments)
         {
-            if (toolName == "get_workspace_context")
+            if (toolName == "get_reference_context")
             {
                 string taskIntent = _getTaskIntent();
-                List<string> files = _getFiles();
+                List<ReferenceDocument> refs = _getReferenceDocuments();
+
+                _logAction("[Server] 에이전트가 get_reference_context를 호출하여 문서 탐색을 시작합니다...");
+
+                // 참조 파일들의 텍스트 내용들을 취합
+                List<FileContentInfo> fileContents = await Task.Run(() => ResolveAndReadReferences(refs));
 
                 var contentData = new
                 {
                     task = taskIntent,
-                    approvedFiles = files
+                    files = fileContents
                 };
 
                 string jsonContent = JsonSerializer.Serialize(contentData, new JsonSerializerOptions { WriteIndented = true });
+                _logAction($"[Server] 에이전트에게 참조 문서 {fileContents.Count}개의 컨텍스트(내용)를 전달했습니다.");
 
                 return new
                 {
@@ -445,82 +432,6 @@ namespace Combined_Source_WPF.Service
                         new { type = "text", text = jsonContent }
                     }
                 };
-            }
-            else if (toolName == "propose_code_change")
-            {
-                string filePath = arguments.GetProperty("filePath").GetString() ?? string.Empty;
-                string proposedCode = arguments.GetProperty("proposedCode").GetString() ?? string.Empty;
-                string description = arguments.TryGetProperty("description", out JsonElement d) ? d.GetString() ?? "" : "";
-
-                if (string.IsNullOrEmpty(filePath))
-                {
-                    return new { isError = true, content = new object[] { new { type = "text", text = "오류: filePath는 필수 인자입니다." } } };
-                }
-
-                _logAction($"[Server] 에이전트가 {Path.GetFileName(filePath)} 파일 수정을 요청했습니다. 대기 중...");
-
-                // WPF UI 스레드에서 승인 창(CodeApprovalWindow) 모달로 띄우기
-                bool isApproved = false;
-                string feedback = string.Empty;
-
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    var window = new CodeApprovalWindow(filePath, proposedCode, description);
-                    window.Owner = Application.Current.MainWindow;
-                    
-                    bool? result = window.ShowDialog();
-                    isApproved = window.IsApproved;
-                    feedback = window.Feedback;
-                });
-
-                if (isApproved)
-                {
-                    try
-                    {
-                        // 1. 디렉토리가 없다면 생성
-                        string? dir = Path.GetDirectoryName(filePath);
-                        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                        {
-                            Directory.CreateDirectory(dir);
-                        }
-
-                        // 2. 실제 파일에 쓰기 반영
-                        File.WriteAllText(filePath, proposedCode, Encoding.UTF8);
-
-                        _logAction($"[Server] ✅ 코드 수정이 승인되었습니다. 파일 업데이트 완료: {Path.GetFileName(filePath)}");
-                        return new
-                        {
-                            content = new object[]
-                            {
-                                new { type = "text", text = $"✅ 승인 완료: 코드 변경 사항이 {filePath}에 성공적으로 반영되었습니다." }
-                            }
-                        };
-                    }
-                    catch (Exception ex)
-                    {
-                        _logAction($"[Server] ❌ 파일 저장 중 오류 발생: {ex.Message}");
-                        return new
-                        {
-                            isError = true,
-                            content = new object[]
-                            {
-                                new { type = "text", text = $"❌ 오류: 승인되었으나 파일 쓰기에 실패했습니다. 이유: {ex.Message}" }
-                            }
-                        };
-                    }
-                }
-                else
-                {
-                    _logAction($"[Server] ❌ 코드 수정이 사용자에 의해 반려되었습니다. 사유: {feedback}");
-                    return new
-                    {
-                        isError = false, // 반려 자체는 통신 오류가 아니므로 isError = false 처리
-                        content = new object[]
-                        {
-                            new { type = "text", text = $"❌ 반려됨: 변경 사항이 반려되었습니다. 반려 사유: {feedback}" }
-                        }
-                    };
-                }
             }
 
             return new
@@ -531,6 +442,124 @@ namespace Combined_Source_WPF.Service
                     new { type = "text", text = $"Unknown tool: {toolName}" }
                 }
             };
+        }
+
+        private List<FileContentInfo> ResolveAndReadReferences(List<ReferenceDocument> references)
+        {
+            var result = new List<FileContentInfo>();
+            var visitedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var reference in references)
+            {
+                if (reference.Type == "File")
+                {
+                    if (File.Exists(reference.Path))
+                    {
+                        AddFileContent(reference.Path, result, visitedFiles);
+                    }
+                    else
+                    {
+                        _logAction($"[Server] ⚠️ 경고: 지정된 파일이 존재하지 않습니다: {reference.Path}");
+                    }
+                }
+                else if (reference.Type == "Directory")
+                {
+                    if (Directory.Exists(reference.Path))
+                    {
+                        try
+                        {
+                            var files = Directory.EnumerateFiles(reference.Path, "*.*", SearchOption.AllDirectories);
+                            foreach (var file in files)
+                            {
+                                if (IsExcludedPath(file)) continue;
+
+                                if (IsTextFile(file))
+                                {
+                                    AddFileContent(file, result, visitedFiles);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logAction($"[Server] ❌ 디렉토리 탐색 오류 ({reference.Path}): {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        _logAction($"[Server] ⚠️ 경고: 지정된 디렉토리가 존재하지 않습니다: {reference.Path}");
+                    }
+                }
+            }
+            return result;
+        }
+
+        private bool IsExcludedPath(string filePath)
+        {
+            var parts = filePath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                var p = part.ToLower();
+                if (p == "bin" || p == "obj" || p == ".git" || p == ".vs" || p == "node_modules" || p == "dist" || p == "out")
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsTextFile(string filePath)
+        {
+            try
+            {
+                var info = new FileInfo(filePath);
+                if (info.Length > 1024 * 1024) return false; // 1MB 초과 시 제외
+
+                string ext = Path.GetExtension(filePath).ToLower();
+                string[] textExtensions = new[]
+                {
+                    ".cs", ".xaml", ".xml", ".json", ".txt", ".md", ".js", ".ts", ".html",
+                    ".css", ".py", ".java", ".cpp", ".h", ".c", ".go", ".rs", ".yaml", ".yml",
+                    ".ini", ".conf", ".sh", ".bat", ".ps1", ".sql", ".config", ".csproj", ".sln"
+                };
+                if (textExtensions.Contains(ext)) return true;
+
+                // 텍스트 파일인지 확인하기 위해 처음 1024바이트를 읽어 널 바이트 유무 검사
+                using (var stream = File.OpenRead(filePath))
+                {
+                    byte[] buffer = new byte[1024];
+                    int read = stream.Read(buffer, 0, buffer.Length);
+                    for (int i = 0; i < read; i++)
+                    {
+                        if (buffer[i] == 0) return false; // 바이너리로 판단
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void AddFileContent(string filePath, List<FileContentInfo> result, HashSet<string> visitedFiles)
+        {
+            string fullPath = Path.GetFullPath(filePath);
+            if (visitedFiles.Contains(fullPath)) return;
+            visitedFiles.Add(fullPath);
+
+            try
+            {
+                string content = File.ReadAllText(fullPath, Encoding.UTF8);
+                result.Add(new FileContentInfo
+                {
+                    FilePath = fullPath,
+                    Content = content
+                });
+            }
+            catch (Exception ex)
+            {
+                _logAction($"[Server] ❌ 파일 읽기 실패 ({fullPath}): {ex.Message}");
+            }
         }
 
         private string BuildErrorResponse(object? id, int errorCode, string message)
@@ -546,5 +575,11 @@ namespace Combined_Source_WPF.Service
                 }
             }, new JsonSerializerOptions { WriteIndented = true });
         }
+    }
+
+    public class FileContentInfo
+    {
+        public string FilePath { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
     }
 }

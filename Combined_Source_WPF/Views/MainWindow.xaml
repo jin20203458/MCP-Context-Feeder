@@ -4,164 +4,271 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:Combined_Source_WPF.Views"
     xmlns:helpers="clr-namespace:Combined_Source_WPF.Helpers"
-    Title="MCP Context Gate (에이전트 제어소)"
+    Title="MCP Context Feeder"
     Width="750"
-    Height="600"
+    Height="670"
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterScreen"
-    helpers:WindowTitleBarBehavior.EnableDarkTitleBar="True"
+    WindowStyle="None"
     Icon="/Resources/app_icon.png"
     Background="{StaticResource VSCode.Brushes.Editor.Background}"
-    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}">
+    Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
+    AllowDrop="True"
+    DragOver="Window_DragOver"
+    Drop="Window_Drop">
 
-    <Grid Margin="15">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" 
+                      ResizeBorderThickness="6" 
+                      CornerRadius="0" 
+                      GlassFrameThickness="1" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3F3F41"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#545456"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TitleBarCloseButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E81123"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F1707A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+ 
+        <!-- GridView Header Style -->
+        <Style TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Sidebar.Background}"/>
+            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource VSCode.Brushes.Sidebar.Border}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridViewColumnHeader">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+ 
+        <!-- ListViewItem Style -->
+        <Style TargetType="ListViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Editor.Foreground}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="0" Padding="{TemplateBinding Padding}">
+                            <GridViewRowPresenter Content="{TemplateBinding Content}" Columns="{TemplateBinding GridView.ColumnCollection}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2A2D2E"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#37373D"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource VSCode.Brushes.Editor.Background}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="32" /> <!-- 커스텀 타이틀바 -->
+            <RowDefinition Height="*" />  <!-- 본문 콘텐츠 -->
         </Grid.RowDefinitions>
 
-        <Border
-            Grid.Row="0"
-            Margin="0,0,0,15"
-            Padding="10"
-            Background="{StaticResource VSCode.Brushes.Sidebar.Background}"
-            BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
-            BorderThickness="1"
-            CornerRadius="4">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock
-                    Margin="0,0,10,0"
-                    VerticalAlignment="Center"
-                    FontWeight="Bold"
-                    Text="📁 프리셋:" />
-                <ComboBox
-                    x:Name="CmbPresets"
-                    Width="220"
-                    Margin="0,0,10,0"
-                    IsEditable="True"
-                    Style="{StaticResource VSCode.Styles.ComboBox}"
-                    SelectionChanged="CmbPresets_SelectionChanged" />
-                <Button
-                    Width="150"
-                    Margin="0,0,10,0"
-                    Click="BtnSavePreset_Click"
-                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
-                    Content="💾 현재 설정 저장" />
-                <Button
-                    Width="95"
-                    Click="BtnDeletePreset_Click"
-                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
-                    Content="🗑️ 삭제" />
-            </StackPanel>
-        </Border>
-
-        <StackPanel Grid.Row="1" Margin="0,0,0,10">
-            <TextBlock
-                Margin="0,0,0,5"
-                FontWeight="Bold"
-                Text="소스 코드가 있는 대상 폴더 (Target Directory):" />
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="80" />
-                </Grid.ColumnDefinitions>
-                <TextBox
-                    x:Name="TxtSourcePath"
-                    Height="28"
-                    Style="{StaticResource VSCode.Styles.TextBox}"
-                    VerticalContentAlignment="Center" />
-                <Button
-                    Grid.Column="1"
-                    Margin="5,0,0,0"
-                    Click="BtnBrowseSource_Click"
-                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
-                    Content="찾기..." />
-            </Grid>
-        </StackPanel>
-
-        <!-- Row 2: 작업 목표 (Task Intent) -->
-        <StackPanel Grid.Row="2" Margin="0,0,0,10">
-            <TextBlock
-                Margin="0,0,0,5"
-                FontWeight="Bold"
-                Text="에이전트에게 지시할 작업 목표 (Task Goal / Intent):" />
-            <TextBox
-                x:Name="TxtTaskIntent"
-                Height="60"
-                Style="{StaticResource VSCode.Styles.TextBox}"
-                AcceptsReturn="True"
-                TextWrapping="Wrap"
-                VerticalScrollBarVisibility="Auto"
-                Text="예: 메인 화면의 버튼 디자인을 조금 더 현대적인 스타일로 변경하고 다크모드를 지원하도록 수정해줘." />
-        </StackPanel>
-
-        <Grid Grid.Row="3" Margin="0,0,0,15">
+        <!-- 1. 커스텀 타이틀바 영역 -->
+        <Grid Grid.Row="0" Background="{StaticResource VSCode.Brushes.Sidebar.Background}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" />
-                <ColumnDefinition Width="10" />
-                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="Auto" /> <!-- 앱 아이콘 -->
+                <ColumnDefinition Width="*" />    <!-- 창 제목 -->
+                <ColumnDefinition Width="Auto" /> <!-- 제어 버튼들 (최소화, 최대화, 닫기) -->
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock
-                    Margin="0,0,0,5"
-                    FontWeight="Bold"
-                    Text="포함할 확장자:" />
-                <TextBox
-                    x:Name="TxtExtensions"
-                    Height="28"
-                    Style="{StaticResource VSCode.Styles.TextBox}"
-                    VerticalContentAlignment="Center"
-                    Text=".cs, .xaml, .cpp, .h" />
-            </StackPanel>
-            <StackPanel Grid.Column="2">
-                <TextBlock
-                    Margin="0,0,0,5"
-                    FontWeight="Bold"
-                    Text="제외할 폴더:" />
-                <TextBox
-                    x:Name="TxtExcludedFolders"
-                    Height="28"
-                    Style="{StaticResource VSCode.Styles.TextBox}"
-                    VerticalContentAlignment="Center"
-                    Text="bin, obj, .git, .vs" />
+
+            <!-- 앱 아이콘 -->
+            <Image Grid.Column="0" Source="/Resources/app_icon.png" Width="16" Height="16" Margin="10,0,5,0" VerticalAlignment="Center" />
+
+            <!-- 창 제목 -->
+            <TextBlock Grid.Column="1" Text="MCP Context Feeder" Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}" VerticalAlignment="Center" FontSize="12" Margin="5,0,0,0" FontWeight="SemiBold" />
+
+            <!-- 제어 버튼 목록 -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+                <!-- 최소화 -->
+                <Button x:Name="BtnMinimize" Click="BtnMinimize_Click" Width="46" Height="32" Style="{StaticResource TitleBarButtonStyle}">
+                    <Path Data="M 0 5 L 10 5" Stroke="{StaticResource VSCode.Brushes.Editor.Foreground}" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="True"/>
+                </Button>
+                <!-- 최대화 / 복원 -->
+                <Button x:Name="BtnMaximize" Click="BtnMaximize_Click" Width="46" Height="32" Style="{StaticResource TitleBarButtonStyle}">
+                    <Path x:Name="PathMaximize" Data="M 0 0 L 10 0 L 10 10 L 0 10 Z" Stroke="{StaticResource VSCode.Brushes.Editor.Foreground}" StrokeThickness="1" Fill="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="True"/>
+                </Button>
+                <!-- 닫기 -->
+                <Button x:Name="BtnClose" Click="BtnClose_Click" Width="46" Height="32" Style="{StaticResource TitleBarCloseButtonStyle}">
+                    <Path Data="M 0 0 L 10 10 M 10 0 L 0 10" Stroke="{StaticResource VSCode.Brushes.Editor.Foreground}" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" SnapsToDevicePixels="True"/>
+                </Button>
             </StackPanel>
         </Grid>
 
-        <!-- Row 4: 서버 제어 및 파일 선택 -->
-        <Grid Grid.Row="4" Margin="0,0,0,15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <!-- 2. 본문 콘텐츠 영역 -->
+        <Grid Grid.Row="1" Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" /> <!-- 프리셋 -->
+                <RowDefinition Height="Auto" /> <!-- 작업 목표 -->
+                <RowDefinition Height="*" />    <!-- 참조 문서 리스트 -->
+                <RowDefinition Height="Auto" /> <!-- 서버 제어 -->
+                <RowDefinition Height="Auto" /> <!-- 로그 헤더 -->
+                <RowDefinition Height="120" />  <!-- 로그 박스 -->
+            </Grid.RowDefinitions>
 
-            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <CheckBox
-                    x:Name="ChkSelectiveMerge"
-                    Margin="0,0,10,0"
-                    VerticalAlignment="Center"
-                    Content="선택한 파일만 공유"
+            <!-- Row 0: 프리셋 -->
+            <Border
+                Grid.Row="0"
+                Margin="0,0,0,15"
+                Padding="10"
+                Background="{StaticResource VSCode.Brushes.Sidebar.Background}"
+                BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
+                BorderThickness="1"
+                CornerRadius="4">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                        Margin="0,0,10,0"
+                        VerticalAlignment="Center"
+                        FontWeight="Bold"
+                        Text="📁 프리셋:" />
+                    <ComboBox
+                        x:Name="CmbPresets"
+                        Width="220"
+                        Margin="0,0,10,0"
+                        IsEditable="True"
+                        Style="{StaticResource VSCode.Styles.ComboBox}"
+                        SelectionChanged="CmbPresets_SelectionChanged" />
+                    <Button
+                        Width="150"
+                        Margin="0,0,10,0"
+                        Click="BtnSavePreset_Click"
+                        Style="{StaticResource VSCode.Styles.Button.Secondary}"
+                        Content="💾 현재 설정 저장" />
+                    <Button
+                        Width="95"
+                        Click="BtnDeletePreset_Click"
+                        Style="{StaticResource VSCode.Styles.Button.Secondary}"
+                        Content="🗑️ 삭제" />
+                </StackPanel>
+            </Border>
+
+            <!-- Row 1: 작업 목표 (Task Intent) -->
+            <StackPanel Grid.Row="1" Margin="0,0,0,15">
+                <TextBlock
+                    Margin="0,0,0,5"
                     FontWeight="Bold"
-                    IsChecked="True"
-                    Style="{StaticResource VSCode.Styles.CheckBox}" />
-
-                <Button
-                    x:Name="BtnSelectFiles"
-                    Width="130"
-                    Height="40"
-                    Margin="0,0,15,0"
-                    Click="BtnSelectFiles_Click"
-                    Style="{StaticResource VSCode.Styles.Button.Secondary}"
-                    Content="📂 파일 선택..."
-                    FontWeight="Bold" />
+                    Text="에이전트에게 지시할 작업 목표 (Task Goal / Intent):" />
+                <TextBox
+                    x:Name="TxtTaskIntent"
+                    Height="60"
+                    Style="{StaticResource VSCode.Styles.TextBox}"
+                    AcceptsReturn="True"
+                    TextWrapping="Wrap"
+                    VerticalScrollBarVisibility="Auto"
+                    Text="예: 메인 화면의 버튼 디자인을 조금 더 현대적인 스타일로 변경하고 다크모드를 지원하도록 수정해줘." />
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <!-- Row 2: 참조 문서 및 폴더 목록 -->
+            <Grid Grid.Row="2" Margin="0,0,0,15">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="참조할 문서 및 폴더 목록 (Reference Documents &amp; Folders):" FontWeight="Bold" Margin="0,0,0,5"/>
+                
+                <ListView x:Name="LstReferences" Grid.Row="1" 
+                          Background="{StaticResource VSCode.Brushes.Control.InputBackground}" 
+                          Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
+                          BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
+                          BorderThickness="1"
+                          SelectionMode="Extended">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="이름" Width="180" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Header="종류" Width="80" DisplayMemberBinding="{Binding Type}" />
+                            <GridViewColumn Header="경로" Width="420" DisplayMemberBinding="{Binding Path}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                
+                <Grid Grid.Row="2" Margin="0,5,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="BtnAddFile" Grid.Column="0" Content="➕ 파일 추가" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Click="BtnAddFile_Click"/>
+                    <Button x:Name="BtnAddFolder" Grid.Column="1" Content="➕ 폴더 추가" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Click="BtnAddFolder_Click"/>
+                    <Button x:Name="BtnRemoveReference" Grid.Column="2" Content="➖ 선택 삭제" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Click="BtnRemoveReference_Click"/>
+                    
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="추정 토큰 수: " Foreground="{StaticResource VSCode.Brushes.Text.Muted}"/>
+                        <TextBlock x:Name="TxtEstimatedTokens" Text="0 tokens" FontWeight="Bold" Foreground="{StaticResource VSCode.Brushes.Accent.Blue}"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <!-- Row 3: 서버 제어 -->
+            <Grid Grid.Row="3" Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
                 <Button
                     x:Name="BtnToggleServer"
                     Width="200"
@@ -172,36 +279,39 @@
                     FontSize="14"
                     FontWeight="Bold"
                     Foreground="White" />
-            </StackPanel>
 
+                <TextBlock
+                    x:Name="TxtServerAddress"
+                    Grid.Column="1"
+                    Margin="15,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    FontWeight="Bold"
+                    Foreground="{StaticResource VSCode.Brushes.Text.Muted}"
+                    Text="서버 중지됨"
+                    TextWrapping="Wrap" />
+            </Grid>
+
+            <!-- Row 4: 로그 헤더 -->
             <TextBlock
-                x:Name="TxtServerAddress"
-                Grid.Column="2"
-                Margin="15,0,0,0"
-                VerticalAlignment="Center"
-                FontSize="12"
+                Grid.Row="4"
+                Margin="0,0,0,5"
                 FontWeight="Bold"
-                Foreground="{StaticResource VSCode.Brushes.Text.Muted}"
-                Text="서버 중지됨"
-                TextWrapping="Wrap" />
+                Text="진행 상황 / 로그:" />
+                
+            <!-- Row 5: 로그 박스 -->
+            <TextBox
+                x:Name="TxtLog"
+                Grid.Row="5"
+                Padding="10"
+                Background="{StaticResource VSCode.Brushes.Control.InputBackground}"
+                BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
+                Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
+                BorderThickness="1"
+                FontFamily="Consolas"
+                IsReadOnly="True"
+                TextWrapping="Wrap"
+                VerticalScrollBarVisibility="Auto" />
         </Grid>
-
-        <TextBlock
-            Grid.Row="5"
-            Margin="0,0,0,5"
-            FontWeight="Bold"
-            Text="진행 상황 / 로그:" />
-        <TextBox
-            x:Name="TxtLog"
-            Grid.Row="6"
-            Padding="10"
-            Background="{StaticResource VSCode.Brushes.Control.InputBackground}"
-            BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
-            Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
-            BorderThickness="1"
-            FontFamily="Consolas"
-            IsReadOnly="True"
-            TextWrapping="Wrap"
-            VerticalScrollBarVisibility="Auto" />
     </Grid>
 </Window>
