@@ -3,6 +3,9 @@
 MCP Context Feeder는 외부 AI 에이전트(Claude, Cursor 등)에게 다수의 참조 문서와 폴더 컨텍스트를 빠르고 효율적으로 주입하기 위해 개발된 로컬 유틸리티입니다. 
 Model Context Protocol(MCP) 표준을 준수하며, 에이전트가 단 한 번의 도구 호출로 지정된 작업 목표와 필요한 코드/문서 컨텍스트를 모두 가져갈 수 있도록 지원합니다.
 
+
+<img width="750" height="670" alt="image" src="https://github.com/user-attachments/assets/ab7eb565-727c-4b83-904b-c20511c5a4bf" />
+
 ## 주요 기능
 
 * **직관적인 컨텍스트 구성**: 드래그 앤 드롭 및 다중 선택(Ctrl/Shift+Click)을 통해 참조할 파일과 폴더를 쉽게 목록화할 수 있습니다.
