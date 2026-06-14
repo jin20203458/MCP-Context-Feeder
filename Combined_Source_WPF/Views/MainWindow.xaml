@@ -7,7 +7,6 @@
     Title="MCP Context Feeder"
     Width="750"
     Height="670"
-    Loaded="Window_Loaded"
     WindowStartupLocation="CenterScreen"
     WindowStyle="None"
     Icon="/Resources/app_icon.png"
@@ -188,16 +187,17 @@
                         Margin="0,0,10,0"
                         IsEditable="True"
                         Style="{StaticResource VSCode.Styles.ComboBox}"
-                        SelectionChanged="CmbPresets_SelectionChanged" />
+                        ItemsSource="{Binding Presets}"
+                        Text="{Binding SelectedPresetName, UpdateSourceTrigger=PropertyChanged}" />
                     <Button
                         Width="150"
                         Margin="0,0,10,0"
-                        Click="BtnSavePreset_Click"
+                        Command="{Binding SavePresetCommand}"
                         Style="{StaticResource VSCode.Styles.Button.Secondary}"
                         Content="💾 현재 설정 저장" />
                     <Button
                         Width="95"
-                        Click="BtnDeletePreset_Click"
+                        Command="{Binding DeletePresetCommand}"
                         Style="{StaticResource VSCode.Styles.Button.Secondary}"
                         Content="🗑️ 삭제" />
                 </StackPanel>
@@ -216,7 +216,7 @@
                     AcceptsReturn="True"
                     TextWrapping="Wrap"
                     VerticalScrollBarVisibility="Auto"
-                    Text="예: 메인 화면의 버튼 디자인을 조금 더 현대적인 스타일로 변경하고 다크모드를 지원하도록 수정해줘." />
+                    Text="{Binding TaskIntent, UpdateSourceTrigger=PropertyChanged}" />
             </StackPanel>
 
             <!-- Row 2: 참조 문서 및 폴더 목록 -->
@@ -233,7 +233,8 @@
                           Foreground="{StaticResource VSCode.Brushes.Editor.Foreground}"
                           BorderBrush="{StaticResource VSCode.Brushes.Sidebar.Border}"
                           BorderThickness="1"
-                          SelectionMode="Extended">
+                          SelectionMode="Extended"
+                          ItemsSource="{Binding ReferenceDocuments}">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="이름" Width="180" DisplayMemberBinding="{Binding Name}" />
@@ -251,13 +252,13 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="BtnAddFile" Grid.Column="0" Content="➕ 파일 추가" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Click="BtnAddFile_Click"/>
-                    <Button x:Name="BtnAddFolder" Grid.Column="1" Content="➕ 폴더 추가" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Click="BtnAddFolder_Click"/>
-                    <Button x:Name="BtnRemoveReference" Grid.Column="2" Content="➖ 선택 삭제" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Click="BtnRemoveReference_Click"/>
+                    <Button x:Name="BtnAddFile" Grid.Column="0" Content="➕ 파일 추가" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Command="{Binding AddFileCommand}"/>
+                    <Button x:Name="BtnAddFolder" Grid.Column="1" Content="➕ 폴더 추가" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Command="{Binding AddFolderCommand}"/>
+                    <Button x:Name="BtnRemoveReference" Grid.Column="2" Content="➖ 선택 삭제" Width="100" Margin="0,0,5,0" Style="{StaticResource VSCode.Styles.Button.Secondary}" Command="{Binding RemoveReferenceCommand}" CommandParameter="{Binding SelectedItems, ElementName=LstReferences}"/>
                     
                     <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="추정 토큰 수: " Foreground="{StaticResource VSCode.Brushes.Text.Muted}"/>
-                        <TextBlock x:Name="TxtEstimatedTokens" Text="0 tokens" FontWeight="Bold" Foreground="{StaticResource VSCode.Brushes.Accent.Blue}"/>
+                        <TextBlock x:Name="TxtEstimatedTokens" Text="{Binding EstimatedTokensText}" FontWeight="Bold" Foreground="{StaticResource VSCode.Brushes.Accent.Blue}"/>
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -273,12 +274,26 @@
                     x:Name="BtnToggleServer"
                     Width="200"
                     Height="40"
-                    Click="BtnToggleServer_Click"
-                    Style="{StaticResource VSCode.Styles.Button.Accent}"
-                    Content="▶️ 서버 시작"
+                    Command="{Binding ToggleServerCommand}"
                     FontSize="14"
                     FontWeight="Bold"
-                    Foreground="White" />
+                    Foreground="White">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource VSCode.Styles.Button.Accent}">
+                            <Setter Property="Content" Value="▶️ 서버 시작" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsServerRunning}" Value="True">
+                                    <Setter Property="Content" Value="⏹️ 서버 중지" />
+                                    <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsServerRunning}" Value="False">
+                                    <Setter Property="Content" Value="▶️ 서버 시작" />
+                                    <Setter Property="Background" Value="{StaticResource VSCode.Brushes.Button.SecondaryBackground}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
 
                 <TextBlock
                     x:Name="TxtServerAddress"
@@ -287,9 +302,19 @@
                     VerticalAlignment="Center"
                     FontSize="12"
                     FontWeight="Bold"
-                    Foreground="{StaticResource VSCode.Brushes.Text.Muted}"
-                    Text="서버 중지됨"
-                    TextWrapping="Wrap" />
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="{Binding ServerStatusText}" />
+                            <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Text.Muted}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsServerRunning}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource VSCode.Brushes.Accent.Blue}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Grid>
 
             <!-- Row 4: 로그 헤더 -->
@@ -311,7 +336,9 @@
                 FontFamily="Consolas"
                 IsReadOnly="True"
                 TextWrapping="Wrap"
-                VerticalScrollBarVisibility="Auto" />
+                VerticalScrollBarVisibility="Auto"
+                Text="{Binding LogText, Mode=OneWay}"
+                TextChanged="TxtLog_TextChanged" />
         </Grid>
     </Grid>
 </Window>
