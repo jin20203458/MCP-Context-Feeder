@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
@@ -15,6 +16,18 @@ namespace Combined_Source_WPF.Services
 {
     public class LocalContextServer
     {
+        private static readonly JsonSerializerOptions _jsonOptionsUnindented = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
+        private static readonly JsonSerializerOptions _jsonOptionsIndented = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
         private HttpListener? _listener;
         private CancellationTokenSource? _cts;
         private readonly Func<string> _getTaskIntent;
@@ -290,16 +303,26 @@ namespace Combined_Source_WPF.Services
 
                     string jsonResponse = await HandleJsonRpcRequestAsync(bodyJson);
 
-                    _logAction($"[Server] 📤 Replying POST /sse Response: {jsonResponse}");
+                    if (string.IsNullOrEmpty(jsonResponse))
+                    {
+                        // 알림(Notification) 등 응답이 없는 경우: HTTP 202 Accepted 응답 (MCP 규격 준수)
+                        response.StatusCode = (int)HttpStatusCode.Accepted;
+                        response.ContentLength64 = 0;
+                        response.Close();
+                    }
+                    else
+                    {
+                        _logAction($"[Server] 📤 Replying POST /sse Response: {jsonResponse}");
 
-                    byte[] responseBytes = Encoding.UTF8.GetBytes(jsonResponse);
-                    response.ContentType = "application/json; charset=utf-8";
-                    response.ContentLength64 = responseBytes.Length;
-                    response.StatusCode = (int)HttpStatusCode.OK;
+                        byte[] responseBytes = Encoding.UTF8.GetBytes(jsonResponse);
+                        response.ContentType = "application/json; charset=utf-8";
+                        response.ContentLength64 = responseBytes.Length;
+                        response.StatusCode = (int)HttpStatusCode.OK;
 
-                    await response.OutputStream.WriteAsync(responseBytes, 0, responseBytes.Length, token);
-                    await response.OutputStream.FlushAsync(token);
-                    response.Close();
+                        await response.OutputStream.WriteAsync(responseBytes, 0, responseBytes.Length, token);
+                        await response.OutputStream.FlushAsync(token);
+                        response.Close();
+                    }
                 }
                 // 3. JSON-RPC 메시지 수신 엔드포인트 (/api/message)
                 else if (method == "POST" && path == "/api/message")
@@ -320,27 +343,32 @@ namespace Combined_Source_WPF.Services
 
                     string jsonResponse = await HandleJsonRpcRequestAsync(bodyJson);
 
-                    _sseClients.TryGetValue(sessionId, out var session);
-
-                    if (session != null)
+                    bool hasResponse = !string.IsNullOrEmpty(jsonResponse);
+                    if (hasResponse)
                     {
-                        try
+                        _sseClients.TryGetValue(sessionId, out var session);
+
+                        if (session != null)
                         {
-                            string singleLineJson = jsonResponse.Replace("\r", "").Replace("\n", "");
-                            await session.SendEventAsync("message", singleLineJson, token);
-                            _logAction($"[Server] 세션 '{sessionId}'의 SSE 스트림으로 JSON-RPC 응답 전송 완료.");
+                            try
+                            {
+                                string singleLineJson = jsonResponse.Replace("\r", "").Replace("\n", "");
+                                await session.SendEventAsync("message", singleLineJson, token);
+                                _logAction($"[Server] 세션 '{sessionId}'의 SSE 스트림으로 JSON-RPC 응답 전송 완료.");
+                            }
+                            catch (Exception ex)
+                            {
+                                _logAction($"[Server] ❌ SSE 스트림에 응답 전송 중 오류 발생 ({sessionId}): {ex.Message}");
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            _logAction($"[Server] ❌ SSE 스트림에 응답 전송 중 오류 발생 ({sessionId}): {ex.Message}");
+                            _logAction($"[Server] ⚠️ 경고: 세션 ID '{sessionId}'에 해당하는 SSE 연결 스트림을 찾을 수 없습니다.");
                         }
                     }
-                    else
-                    {
-                        _logAction($"[Server] ⚠️ 경고: 세션 ID '{sessionId}'에 해당하는 SSE 연결 스트림을 찾을 수 없습니다.");
-                    }
 
-                    response.StatusCode = (int)HttpStatusCode.OK;
+                    // MCP SSE Transport 규격: 알림(Notification) / 응답(Response)은 202 Accepted, 요청(Request)은 200 OK 반환
+                    response.StatusCode = hasResponse ? (int)HttpStatusCode.OK : (int)HttpStatusCode.Accepted;
                     response.ContentLength64 = 0;
                     response.Close();
                 }
@@ -350,7 +378,7 @@ namespace Combined_Source_WPF.Services
                     string taskIntent = _getTaskIntent();
                     List<ReferenceDocument> refs = _getReferenceDocuments();
                     var responseData = new { task = taskIntent, approvedReferences = refs };
-                    string jsonResponse = JsonSerializer.Serialize(responseData, new JsonSerializerOptions { WriteIndented = true });
+                    string jsonResponse = JsonSerializer.Serialize(responseData, _jsonOptionsIndented);
                     
                     byte[] responseBytes = Encoding.UTF8.GetBytes(jsonResponse);
                     response.ContentType = "application/json; charset=utf-8";
@@ -387,12 +415,24 @@ namespace Combined_Source_WPF.Services
             {
                 using var doc = JsonDocument.Parse(jsonRpcRequest);
                 JsonElement root = doc.RootElement;
-                if (root.TryGetProperty("id", out JsonElement idProp))
+                
+                // id 프로퍼티 존재 여부 확인 (JSON-RPC 2.0 Notification 규격)
+                bool isNotification = !root.TryGetProperty("id", out JsonElement idProp);
+                if (!isNotification)
                 {
                     id = idProp.ValueKind == JsonValueKind.Number ? (object)idProp.GetInt64() : idProp.GetString();
                 }
 
-                string method = root.GetProperty("method").GetString() ?? string.Empty;
+                // method 이름 안전하게 추출
+                string method = root.TryGetProperty("method", out JsonElement mProp) ? (mProp.GetString() ?? string.Empty) : string.Empty;
+
+                // 알림(Notification) 메시지인 경우 규격에 따라 응답을 전송하지 않음
+                if (isNotification)
+                {
+                    _logAction($"[Server] 🔔 알림(Notification) 수신됨. 응답 생략: {method}");
+                    return string.Empty;
+                }
+
                 JsonElement paramsEl = root.TryGetProperty("params", out JsonElement p) ? p : default;
 
                 object? result = null;
@@ -449,7 +489,7 @@ namespace Combined_Source_WPF.Services
                     jsonrpc = "2.0",
                     id = id,
                     result = result
-                }, new JsonSerializerOptions { WriteIndented = false });
+                }, _jsonOptionsUnindented);
             }
             catch (Exception ex)
             {
@@ -474,7 +514,7 @@ namespace Combined_Source_WPF.Services
                     files = fileContents
                 };
 
-                string jsonContent = JsonSerializer.Serialize(contentData, new JsonSerializerOptions { WriteIndented = true });
+                string jsonContent = JsonSerializer.Serialize(contentData, _jsonOptionsIndented);
                 _logAction($"[Server] 에이전트에게 참조 문서 {fileContents.Count}개의 컨텍스트(내용)를 전달했습니다.");
 
                 return new
@@ -593,7 +633,7 @@ namespace Combined_Source_WPF.Services
                     code = errorCode,
                     message = message
                 }
-            }, new JsonSerializerOptions { WriteIndented = false });
+            }, _jsonOptionsUnindented);
         }
     }
 
