@@ -4,7 +4,8 @@ MCP Context Feeder는 외부 AI 에이전트(Claude, Cursor 등)에게 다수의
 Model Context Protocol(MCP) 표준을 준수하며, 에이전트가 단 한 번의 도구 호출로 지정된 작업 목표와 필요한 코드/문서 컨텍스트를 모두 가져갈 수 있도록 지원합니다.
 
 
-<img width="750" height="670" alt="image" src="https://github.com/user-attachments/assets/ab7eb565-727c-4b83-904b-c20511c5a4bf" />
+<img width="750" height="670" alt="image" src="https://github.com/user-attachments/assets/7f462530-cd09-4221-955b-af0ee860c5ca" />
+
 
 ## 주요 기능
 
