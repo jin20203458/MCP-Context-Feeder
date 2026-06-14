@@ -57,7 +57,7 @@ graph TD
     VM <-->|컨텍스트 람다 전달 & 시작/중지 제어| Server[LocalContextServer]
     Server -.->|포트 바인딩| LocalHTTP["HttpListener (127.0.0.1:15050+)"]
     
-    Agent[AI 에이전트 (Claude / Cursor)] <-->|GET /sse (SSE 연결)| LocalHTTP
+    Agent["AI 에이전트 (Claude / Cursor)"] <-->|GET /sse (SSE 연결)| LocalHTTP
     Agent <-->|POST /api/message (JSON-RPC 호출)| LocalHTTP
 ```
 
