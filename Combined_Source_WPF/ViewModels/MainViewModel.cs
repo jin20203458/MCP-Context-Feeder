@@ -366,6 +366,20 @@ namespace Combined_Source_WPF.ViewModels
             ServerStatusText = "서버 중지됨";
         }
 
+        [RelayCommand]
+        private void CopyToolName()
+        {
+            try
+            {
+                Clipboard.SetText("get_reference_context");
+                LogMessage("[UI] 📋 도구명 'get_reference_context'가 클립보드에 복사되었습니다.");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 클립보드 복사 중 오류 발생: {ex.Message}");
+            }
+        }
+
         private void LogMessage(string message)
         {
             Application.Current.Dispatcher.Invoke(() =>

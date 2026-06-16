@@ -32,7 +32,8 @@ namespace Combined_Source_WPF.Services
         private CancellationTokenSource? _cts;
         private readonly Func<string> _getTaskIntent;
         private readonly Func<List<ReferenceDocument>> _getReferenceDocuments;
-        private readonly Action<string> _logAction;
+        private readonly Action<string> _uiLogger;
+        private readonly Action<string> _fileLogger;
         private readonly IFileInspector _fileInspector;
 
         private class SseClientSession : IDisposable
@@ -104,11 +105,10 @@ namespace Combined_Source_WPF.Services
             _getTaskIntent = getTaskIntent ?? throw new ArgumentNullException(nameof(getTaskIntent));
             _getReferenceDocuments = getReferenceDocuments ?? throw new ArgumentNullException(nameof(getReferenceDocuments));
             _fileInspector = fileInspector ?? throw new ArgumentNullException(nameof(fileInspector));
+            _uiLogger = logAction ?? throw new ArgumentNullException(nameof(logAction));
             
-            if (logAction == null) throw new ArgumentNullException(nameof(logAction));
-            _logAction = (msg) =>
+            _fileLogger = (msg) =>
             {
-                logAction(msg);
                 try
                 {
                     string logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".gemini", "antigravity", "scratch");
@@ -116,19 +116,22 @@ namespace Combined_Source_WPF.Services
                     string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {msg}{Environment.NewLine}";
                     File.AppendAllText(logPath, logLine, Encoding.UTF8);
                 }
-                catch (IOException)
+                catch
                 {
                     // 로그 기록 실패 시 무시
                 }
-                catch (UnauthorizedAccessException)
-                {
-                    // 권한 부족 시 무시
-                }
-                catch
-                {
-                    // 기타 무시
-                }
             };
+        }
+
+        private void LogToBoth(string message)
+        {
+            _uiLogger(message);
+            _fileLogger(message);
+        }
+
+        private void LogToFileOnly(string message)
+        {
+            _fileLogger(message);
         }
 
         public void Start(int preferredPort = 15050)
@@ -164,7 +167,7 @@ namespace Combined_Source_WPF.Services
             }
 
             _cts = new CancellationTokenSource();
-            _logAction($"[Server] 표준 MCP SSE 서버 기동 완료: http://127.0.0.1:{Port}/sse");
+            LogToBoth($"[Server] 표준 MCP SSE 서버 기동 완료: http://127.0.0.1:{Port}/sse");
 
             CancellationToken token = _cts.Token;
             Task.Run(() => AcceptRequestsAsync(token), token);
@@ -186,11 +189,11 @@ namespace Combined_Source_WPF.Services
 
                 _listener?.Stop();
                 _listener = null;
-                _logAction("[Server] 표준 MCP 서버가 중지되었습니다.");
+                LogToBoth("[Server] 표준 MCP 서버가 중지되었습니다.");
             }
             catch (Exception ex)
             {
-                _logAction($"[Server] 서버 중지 중 오류 발생: {ex.Message}");
+                LogToBoth($"[Server] 서버 중지 중 오류 발생: {ex.Message}");
             }
             finally
             {
@@ -218,7 +221,7 @@ namespace Combined_Source_WPF.Services
                 }
                 catch (Exception ex)
                 {
-                    _logAction($"[Server] 요청 수락 중 오류: {ex.Message}");
+                    LogToBoth($"[Server] 요청 수락 중 오류: {ex.Message}");
                 }
             }
         }
@@ -243,7 +246,7 @@ namespace Combined_Source_WPF.Services
             string path = "/" + (request.Url?.AbsolutePath ?? "").Trim('/').ToLowerInvariant();
             string method = request.HttpMethod.ToUpperInvariant();
 
-            _logAction($"[Server] 📥 Received Request: {method} {request.RawUrl}");
+            LogToFileOnly($"[Server] 📥 Received Request: {method} {request.RawUrl}");
 
             try
             {
@@ -266,7 +269,7 @@ namespace Combined_Source_WPF.Services
 
                     // 상대 경로 방식으로 엔드포인트 이벤트 통지
                     await session.SendEventAsync("endpoint", $"/api/message?sessionId={clientId}", token);
-                    _logAction($"[Server] AI 에이전트가 SSE로 연결되었습니다. (Session ID: {clientId})");
+                    LogToBoth($"[Server] AI 에이전트가 SSE로 연결되었습니다. (Session ID: {clientId})");
 
                     _sseClients[clientId] = session;
 
@@ -284,13 +287,13 @@ namespace Combined_Source_WPF.Services
                     }
                     catch (Exception ex)
                     {
-                        _logAction($"[Server] ⚠️ SSE 세션 오류 ({clientId}): {ex.Message}");
+                        LogToBoth($"[Server] ⚠️ SSE 세션 오류 ({clientId}): {ex.Message}");
                     }
                     finally
                     {
                         _sseClients.TryRemove(clientId, out _);
                         session.Dispose();
-                        _logAction($"[Server] 에이전트 연결이 종료되었습니다. (Session ID: {clientId})");
+                        LogToBoth($"[Server] 에이전트 연결이 종료되었습니다. (Session ID: {clientId})");
                     }
                 }
                 // 2. Streamable HTTP 요청 수락 (POST /sse)
@@ -299,7 +302,7 @@ namespace Combined_Source_WPF.Services
                     using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
                     string bodyJson = await reader.ReadToEndAsync(token);
 
-                    _logAction($"[Server] 📥 Received POST /sse JSON-RPC Request: {bodyJson}");
+                    LogToFileOnly($"[Server] 📥 Received POST /sse JSON-RPC Request: {bodyJson}");
 
                     string jsonResponse = await HandleJsonRpcRequestAsync(bodyJson);
 
@@ -312,7 +315,7 @@ namespace Combined_Source_WPF.Services
                     }
                     else
                     {
-                        _logAction($"[Server] 📤 Replying POST /sse Response: {jsonResponse}");
+                        LogToFileOnly($"[Server] 📤 Replying POST /sse Response: {jsonResponse}");
 
                         byte[] responseBytes = Encoding.UTF8.GetBytes(jsonResponse);
                         response.ContentType = "application/json; charset=utf-8";
@@ -339,7 +342,7 @@ namespace Combined_Source_WPF.Services
                     using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
                     string bodyJson = await reader.ReadToEndAsync(token);
 
-                    _logAction($"[Server] 📥 Received POST /api/message ({sessionId}): {bodyJson}");
+                    LogToFileOnly($"[Server] 📥 Received POST /api/message ({sessionId}): {bodyJson}");
 
                     string jsonResponse = await HandleJsonRpcRequestAsync(bodyJson);
 
@@ -354,16 +357,16 @@ namespace Combined_Source_WPF.Services
                             {
                                 string singleLineJson = jsonResponse.Replace("\r", "").Replace("\n", "");
                                 await session.SendEventAsync("message", singleLineJson, token);
-                                _logAction($"[Server] 세션 '{sessionId}'의 SSE 스트림으로 JSON-RPC 응답 전송 완료.");
+                                LogToFileOnly($"[Server] 세션 '{sessionId}'의 SSE 스트림으로 JSON-RPC 응답 전송 완료.");
                             }
                             catch (Exception ex)
                             {
-                                _logAction($"[Server] ❌ SSE 스트림에 응답 전송 중 오류 발생 ({sessionId}): {ex.Message}");
+                                LogToBoth($"[Server] ❌ SSE 스트림에 응답 전송 중 오류 발생 ({sessionId}): {ex.Message}");
                             }
                         }
                         else
                         {
-                            _logAction($"[Server] ⚠️ 경고: 세션 ID '{sessionId}'에 해당하는 SSE 연결 스트림을 찾을 수 없습니다.");
+                            LogToBoth($"[Server] ⚠️ 경고: 세션 ID '{sessionId}'에 해당하는 SSE 연결 스트림을 찾을 수 없습니다.");
                         }
                     }
 
@@ -397,7 +400,7 @@ namespace Combined_Source_WPF.Services
             }
             catch (Exception ex)
             {
-                _logAction($"[Server] ❌ 요청 처리 중 오류 발생: {ex.Message}");
+                LogToBoth($"[Server] ❌ 요청 처리 중 오류 발생: {ex.Message}");
                 try
                 {
                     response.StatusCode = (int)HttpStatusCode.InternalServerError;
@@ -429,10 +432,11 @@ namespace Combined_Source_WPF.Services
                 // 알림(Notification) 메시지인 경우 규격에 따라 응답을 전송하지 않음
                 if (isNotification)
                 {
-                    _logAction($"[Server] 🔔 알림(Notification) 수신됨. 응답 생략: {method}");
+                    LogToBoth($"[Server] 🔔 알림(Notification) 수신됨: '{method}'");
                     return string.Empty;
                 }
 
+                LogToBoth($"[Server] 📥 MCP 요청 수신: '{method}'");
                 JsonElement paramsEl = root.TryGetProperty("params", out JsonElement p) ? p : default;
 
                 object? result = null;
@@ -453,6 +457,7 @@ namespace Combined_Source_WPF.Services
                                 version = "1.0.0"
                             }
                         };
+                        LogToBoth("[Server] 📤 MCP 초기화 완료");
                         break;
 
                     case "tools/list":
@@ -472,15 +477,18 @@ namespace Combined_Source_WPF.Services
                                 }
                             }
                         };
+                        LogToBoth("[Server] 📤 MCP 도구 목록 반환");
                         break;
 
                     case "tools/call":
                         string toolName = paramsEl.GetProperty("name").GetString() ?? string.Empty;
                         JsonElement argsEl = paramsEl.GetProperty("arguments");
+                        LogToBoth($"[Server] 📥 도구 호출: '{toolName}'");
                         result = await ExecuteToolCallAsync(toolName, argsEl);
                         break;
 
                     default:
+                        LogToBoth($"[Server] ⚠️ 지원되지 않는 메서드 요청: '{method}'");
                         return BuildErrorResponse(id, -32601, $"Method not found: {method}");
                 }
 
@@ -493,6 +501,7 @@ namespace Combined_Source_WPF.Services
             }
             catch (Exception ex)
             {
+                LogToBoth($"[Server] ❌ JSON-RPC 요청 처리 중 내부 오류 발생: {ex.Message}");
                 return BuildErrorResponse(id, -32603, $"Internal RPC Error: {ex.Message}");
             }
         }
@@ -504,7 +513,7 @@ namespace Combined_Source_WPF.Services
                 string taskIntent = _getTaskIntent();
                 List<ReferenceDocument> refs = _getReferenceDocuments();
 
-                _logAction("[Server] 에이전트가 get_reference_context를 호출하여 문서 탐색을 시작합니다...");
+                LogToBoth("[Server] 에이전트가 get_reference_context를 호출하여 문서 탐색을 시작합니다...");
 
                 List<FileContentInfo> fileContents = await Task.Run(() => ResolveAndReadReferences(refs));
 
@@ -515,7 +524,7 @@ namespace Combined_Source_WPF.Services
                 };
 
                 string jsonContent = JsonSerializer.Serialize(contentData, _jsonOptionsIndented);
-                _logAction($"[Server] 에이전트에게 참조 문서 {fileContents.Count}개의 컨텍스트(내용)를 전달했습니다.");
+                LogToBoth($"[Server] 에이전트에게 참조 문서 {fileContents.Count}개의 컨텍스트(내용)를 전달했습니다.");
 
                 return new
                 {
@@ -551,7 +560,7 @@ namespace Combined_Source_WPF.Services
                     }
                     else
                     {
-                        _logAction($"[Server] ⚠️ 경고: 지정된 파일이 존재하지 않습니다: {reference.Path}");
+                        LogToBoth($"[Server] ⚠️ 경고: 지정된 파일이 존재하지 않습니다: {reference.Path}");
                     }
                 }
                 else if (reference.Type == "Directory")
@@ -573,20 +582,20 @@ namespace Combined_Source_WPF.Services
                         }
                         catch (UnauthorizedAccessException ex)
                         {
-                            _logAction($"[Server] ❌ 디렉토리 권한 오류 ({reference.Path}): {ex.Message}");
+                            LogToBoth($"[Server] ❌ 디렉토리 권한 오류 ({reference.Path}): {ex.Message}");
                         }
                         catch (IOException ex)
                         {
-                            _logAction($"[Server] ❌ 디렉토리 IO 오류 ({reference.Path}): {ex.Message}");
+                            LogToBoth($"[Server] ❌ 디렉토리 IO 오류 ({reference.Path}): {ex.Message}");
                         }
                         catch (Exception ex)
                         {
-                            _logAction($"[Server] ❌ 디렉토리 탐색 오류 ({reference.Path}): {ex.Message}");
+                            LogToBoth($"[Server] ❌ 디렉토리 탐색 오류 ({reference.Path}): {ex.Message}");
                         }
                     }
                     else
                     {
-                        _logAction($"[Server] ⚠️ 경고: 지정된 디렉토리가 존재하지 않습니다: {reference.Path}");
+                        LogToBoth($"[Server] ⚠️ 경고: 지정된 디렉토리가 존재하지 않습니다: {reference.Path}");
                     }
                 }
             }
@@ -610,15 +619,15 @@ namespace Combined_Source_WPF.Services
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logAction($"[Server] ❌ 파일 읽기 권한 없음 ({fullPath}): {ex.Message}");
+                LogToBoth($"[Server] ❌ 파일 읽기 권한 없음 ({fullPath}): {ex.Message}");
             }
             catch (IOException ex)
             {
-                _logAction($"[Server] ❌ 파일 읽기 IO 실패 ({fullPath}): {ex.Message}");
+                LogToBoth($"[Server] ❌ 파일 읽기 IO 실패 ({fullPath}): {ex.Message}");
             }
             catch (Exception ex)
             {
-                _logAction($"[Server] ❌ 파일 읽기 실패 ({fullPath}): {ex.Message}");
+                LogToBoth($"[Server] ❌ 파일 읽기 실패 ({fullPath}): {ex.Message}");
             }
         }
 

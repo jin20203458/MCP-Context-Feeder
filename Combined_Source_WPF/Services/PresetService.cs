@@ -72,21 +72,21 @@ namespace Combined_Source_WPF.Services
                     }
                 }
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // JSON 파싱 에러 예외 처리
+                throw new Exception("프리셋 파일의 형식(JSON)이 올바르지 않습니다.", ex);
             }
-            catch (IOException)
+            catch (IOException ex)
             {
-                // 파일 IO 에러 예외 처리
+                throw new Exception("프리셋 파일을 읽는 도중 디스크 오류가 발생했습니다.", ex);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                // 권한 에러 예외 처리
+                throw new Exception("프리셋 파일에 접근할 수 있는 권한이 없습니다.", ex);
             }
-            catch
+            catch (Exception ex)
             {
-                // 기타 예외 처리
+                throw new Exception("프리셋을 불러오는 중 알 수 없는 오류가 발생했습니다.", ex);
             }
             return presets;
         }
@@ -99,17 +99,17 @@ namespace Combined_Source_WPF.Services
                 string json = JsonSerializer.Serialize(presets, options);
                 File.WriteAllText(_presetFilePath, json);
             }
-            catch (IOException)
+            catch (IOException ex)
             {
-                // 파일 IO 에러 예외 처리
+                throw new Exception("프리셋 파일을 저장하는 도중 디스크 오류가 발생했습니다.", ex);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                // 권한 에러 예외 처리
+                throw new Exception("프리셋 파일을 저장할 수 있는 권한이 없습니다.", ex);
             }
-            catch
+            catch (Exception ex)
             {
-                // 기타 예외 처리
+                throw new Exception("프리셋을 저장하는 중 알 수 없는 오류가 발생했습니다.", ex);
             }
         }
     }
